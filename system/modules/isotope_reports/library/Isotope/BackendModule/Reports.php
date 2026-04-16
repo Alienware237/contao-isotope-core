@@ -13,7 +13,6 @@ namespace Isotope\BackendModule;
 
 use Contao\BackendUser;
 use Contao\Database;
-use Contao\Session;
 use Contao\StringUtil;
 use Isotope\Isotope;
 use Isotope\Model\Config;
@@ -77,7 +76,7 @@ class Reports extends BackendOverview
      */
     private function getSummary(array $data): string
     {
-        $session = Session::getInstance()->get('fieldset_states');
+        $session = \Contao\System::getContainer()->get('request_stack')->getSession()->get('fieldset_states');
 
         $strBuffer = '
 <fieldset id="pal_summary" class="tl_tbox '.(($session['iso_be_overview_legend']['summary'] ?? null) ? '' : ' collapsed').'">

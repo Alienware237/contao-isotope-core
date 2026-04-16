@@ -19,7 +19,6 @@ use Contao\Database;
 use Contao\Environment;
 use Contao\Image;
 use Contao\Input;
-use Contao\Session;
 use Contao\StringUtil;
 use Contao\System;
 use Contao\Versions;
@@ -291,7 +290,7 @@ class Button extends Backend
               onSuccess: function () {
                 window.location.href = '.json_encode(StringUtil::decodeEntities(Backend::addToUrl($href . '&pid=' . (int) Input::get('pid') . '&id=' . $row['id']))).'
               }
-            }).post({action:"moveProduct", value:value[0], REQUEST_TOKEN:"' . REQUEST_TOKEN . '"});
+            }).post({action:"moveProduct", value:value[0], REQUEST_TOKEN:"' . $this->getCsrfToken() . '"});
           }
         })
       });
@@ -320,7 +319,7 @@ class Button extends Backend
         Backend.openModalSelector({
           id: "tl_listing",
           title: ' . json_encode($GLOBALS['TL_LANG']['tl_iso_product']['product_groups'][0]) . ',
-          url: '.json_encode(\Contao\StringUtil::ampersand(System::getContainer()->get('contao.picker.builder')->getUrl('dc.tl_iso_group', ['fieldType' => 'radio'])). Session::getInstance()->get('iso_products_gid')).',
+          url: '.json_encode(\Contao\StringUtil::ampersand(System::getContainer()->get('contao.picker.builder')->getUrl('dc.tl_iso_group', ['fieldType' => 'radio'])). System::getContainer()->get('request_stack')->getSession()->get('iso_products_gid')).',
           callback: function(table, value) {
               new Request.Contao({
               evalScripts: false,
@@ -330,7 +329,7 @@ class Button extends Backend
                 var hidden = new Element("input", { type:"hidden", name:"cut" }).inject(form, "top");
                 form.submit();
               }
-            }).post({action:"moveProducts", value:value[0], REQUEST_TOKEN:"' . REQUEST_TOKEN . '"});
+            }).post({action:"moveProducts", value:value[0], REQUEST_TOKEN:"' . $this->getCsrfToken() . '"});
           }
         })
       });
@@ -402,5 +401,17 @@ class Button extends Backend
         }
 
         return (int) ($arrDownloads[$intProduct] ?? 0);
+    }
+
+    /**
+     * Get the current CSRF token
+     * @return string
+     */
+    protected function getCsrfToken()
+    {
+        $container = System::getContainer();
+        return $container->get('contao.csrf.token_manager')
+            ->getToken($container->getParameter('contao.csrf_token_name'))
+            ->getValue();
     }
 }

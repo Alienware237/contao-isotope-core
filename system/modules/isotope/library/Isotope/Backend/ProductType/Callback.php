@@ -94,7 +94,7 @@ class Callback extends Permission
             case 'deleteAll':
             case 'overrideAll':
                 $session = $this->Session->getData();
-                if ('deleteAll' === Input::get('act') && !$this->User->hasAccess('delete', 'iso_product_typep')) {
+                if ('deleteAll' === Input::get('act') && !$objBackendUser->hasAccess('delete', 'iso_product_typep')) {
                     $session['CURRENT']['IDS'] = array();
                 } else {
                     $session['CURRENT']['IDS'] = array_intersect($session['CURRENT']['IDS'], $root);

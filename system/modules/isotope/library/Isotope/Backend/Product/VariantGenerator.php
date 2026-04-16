@@ -91,7 +91,7 @@ class VariantGenerator extends Backend
 <form id="tl_iso_product_generate" class="tl_form" method="post">
 <div class="tl_formbody_edit">
 <input type="hidden" name="FORM_SUBMIT" value="tl_iso_product_generate">
-<input type="hidden" name="REQUEST_TOKEN" value="' . REQUEST_TOKEN . '">
+<input type="hidden" name="REQUEST_TOKEN" value="' . $this->getCsrfToken() . '">
 
 <fieldset class="tl_tbox block">
 ' . $strBuffer . '
@@ -161,5 +161,17 @@ class VariantGenerator extends Backend
         }
 
         Controller::redirect(str_replace('&key=generate', '', Environment::get('request')));
+    }
+
+    /**
+     * Get the current CSRF token
+     * @return string
+     */
+    protected function getCsrfToken()
+    {
+        $container = System::getContainer();
+        return $container->get('contao.csrf.token_manager')
+            ->getToken($container->getParameter('contao.csrf_token_name'))
+            ->getValue();
     }
 }

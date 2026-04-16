@@ -61,7 +61,7 @@ class AssetImport extends Backend
 <form id="tl_iso_product_import" class="tl_form" method="post">
 <div class="tl_formbody_edit iso_importassets">
 <input type="hidden" name="FORM_SUBMIT" value="tl_iso_product_import">
-<input type="hidden" name="REQUEST_TOKEN" value="' . REQUEST_TOKEN . '">
+<input type="hidden" name="REQUEST_TOKEN" value="' . $this->getCsrfToken(). '">
 
 <div class="tl_tbox block">
   <div class="widget">
@@ -90,7 +90,7 @@ class AssetImport extends Backend
      */
     protected function importFromPath($strPath)
     {
-        $arrFiles = \Contao\Folder::scan(TL_ROOT . '/' . $strPath);
+        $arrFiles = \Contao\Folder::scan(\Contao\System::getContainer()->getParameter('kernel.project_dir') . '/' . $strPath);
 
         if (empty($arrFiles)) {
             Message::addError($GLOBALS['TL_LANG']['MSC']['noFilesInFolder']);
@@ -136,11 +136,11 @@ class AssetImport extends Backend
                 $arrNewImages = array();
 
                 foreach ($arrMatches as $file) {
-                    if (is_dir(TL_ROOT . '/' . $strPath . '/' . $file)) {
-                        $arrSubfiles = \Contao\Folder::scan(TL_ROOT . '/' . $strPath . '/' . $file);
+                    if (is_dir(\Contao\System::getContainer()->getParameter('kernel.project_dir') . '/' . $strPath . '/' . $file)) {
+                        $arrSubfiles = \Contao\Folder::scan(\Contao\System::getContainer()->getParameter('kernel.project_dir') . '/' . $strPath . '/' . $file);
 
                         foreach ($arrSubfiles as $subfile) {
-                            if (is_file(TL_ROOT . '/' . $strPath . '/' . $file . '/' . $subfile)) {
+                            if (is_file(\Contao\System::getContainer()->getParameter('kernel.project_dir') . '/' . $strPath . '/' . $file . '/' . $subfile)) {
                                 $objFile = new File($strPath . '/' . $file . '/' . $subfile);
 
                                 if ($objFile->isGdImage) {
@@ -148,7 +148,7 @@ class AssetImport extends Backend
                                 }
                             }
                         }
-                    } elseif (is_file(TL_ROOT . '/' . $strPath . '/' . $file)) {
+                    } elseif (is_file(\Contao\System::getContainer()->getParameter('kernel.project_dir') . '/' . $strPath . '/' . $file)) {
                         $objFile = new File($strPath . '/' . $file);
 
                         if ($objFile->isGdImage) {
@@ -159,12 +159,12 @@ class AssetImport extends Backend
 
                 if (!empty($arrNewImages)) {
                     foreach ($arrNewImages as $strFile) {
-                        $pathinfo = pathinfo(TL_ROOT . '/' . strtolower($strFile));
+                        $pathinfo = pathinfo(\Contao\System::getContainer()->getParameter('kernel.project_dir') . '/' . strtolower($strFile));
 
                         // Will recursively create the folder
                         $objFolder = new Folder('isotope/' . substr($pathinfo['filename'], 0, 1));
 
-                        $strCacheName = $pathinfo['filename'] . '-' . substr(md5_file(TL_ROOT . '/' . $strFile), 0, 8) . '.' . $pathinfo['extension'];
+                        $strCacheName = $pathinfo['filename'] . '-' . substr(md5_file(\Contao\System::getContainer()->getParameter('kernel.project_dir') . '/' . $strFile), 0, 8) . '.' . $pathinfo['extension'];
 
                         Files::getInstance()->copy($strFile, $objFolder->path . '/' . $strCacheName);
                         $arrImages[] = array('src' => $strCacheName);
@@ -192,5 +192,17 @@ class AssetImport extends Backend
         }
 
         Controller::reload();
+    }
+
+    /**
+     * Get the current CSRF token
+     * @return string
+     */
+    protected function getCsrfToken()
+    {
+        $container = System::getContainer();
+        return $container->get('contao.csrf.token_manager')
+            ->getToken($container->getParameter('contao.csrf_token_name'))
+            ->getValue();
     }
 }

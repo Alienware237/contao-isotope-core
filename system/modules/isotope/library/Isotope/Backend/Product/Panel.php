@@ -17,7 +17,6 @@ use Contao\Database;
 use Contao\Image;
 use Contao\Input;
 use Contao\RequestToken;
-use Contao\Session;
 use Contao\System;
 
 class Panel extends Backend
@@ -34,9 +33,15 @@ class Panel extends Backend
         }
 
         $user      = BackendUser::getInstance();
-        $session   = Session::getInstance()->getData();
+
+        $container = System::getContainer();
+        $session   = $container->get('request_stack')->getSession()->all();
         $intPage   = $session['filter']['tl_iso_product']['iso_page'] ?? 0;
         $buttons   = [];
+
+        // CSRF-Token über den Container beziehen
+        $tokenManager = $container->get('contao.csrf.token_manager');
+        $strToken = $tokenManager->getToken($container->getParameter('contao.csrf_token_name'))->getValue();
 
         // Check if user can manage groups
         if ($user->isAdmin || (\is_array($user->iso_groups) && 0 !== \count($user->iso_groups))) {
@@ -53,7 +58,7 @@ class Panel extends Backend
             new Request.Contao({
               evalScripts: false,
               onRequest: AjaxRequest.displayBox(Contao.lang.loading + \' …\')
-            }).post({action:"filterGroups", value:value[0], REQUEST_TOKEN:"' . REQUEST_TOKEN . '"});
+            }).post({action:"filterGroups", value:value[0], REQUEST_TOKEN:"' . $strToken . '"});
           }
         })
       });
@@ -73,7 +78,7 @@ class Panel extends Backend
             new Request.Contao({
               evalScripts: false,
               onRequest: AjaxRequest.displayBox(Contao.lang.loading + \' …\')
-            }).post({action:"filterPages", value:value[0], REQUEST_TOKEN:"' . REQUEST_TOKEN . '"});
+            }).post({action:"filterPages", value:value[0], REQUEST_TOKEN:"' . $strToken . '"});
           }
         })
       });
@@ -95,7 +100,7 @@ class Panel extends Backend
             return '';
         }
 
-        $session = Session::getInstance()->getData();
+        $session = System::getContainer()->get('request_stack')->getSession()->all();
 
         // Filters
         $arrFilters = [
@@ -152,15 +157,12 @@ class Panel extends Backend
             return '';
         }
 
-        $target = System::getContainer()->get('router')->generate('contao_backend', [
+        $target = System::getContainer()->get('router')->generate('contao', [
             'do' => 'iso_products',
             'table' => 'tl_iso_product_category',
             'id' => '_value_',
             'page_id' => '_value_',
-            'rt' => RequestToken::get(),
-
-            // TODO: for Contao 4.13+
-            //'rt' => System::getContainer()->get('contao.csrf.token_manager')->getDefaultTokenValue()
+            'rt' => System::getContainer()->get('contao.csrf.token_manager')->getDefaultTokenValue(),
         ]);
 
         return '
@@ -188,7 +190,7 @@ class Panel extends Backend
      */
     public function applyAdvancedFilters()
     {
-        $session = Session::getInstance()->getData();
+        $session = \Contao\System::getContainer()->get('request_stack')->getSession()->all();
 
         // Store filter values in the session
         foreach ($_POST as $k => $v) {
@@ -205,7 +207,7 @@ class Panel extends Backend
             }
         }
 
-        Session::getInstance()->setData($session);
+        \Contao\System::getContainer()->get('request_stack')->getSession()->replace($session);
 
         if (Input::get('id') > 0 || !isset($session['filter']['tl_iso_product'])) {
             return;

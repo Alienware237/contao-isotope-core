@@ -12,7 +12,7 @@
 namespace Isotope\Backend\ProductType;
 
 use Contao\Backend;
-use Haste\Util\Format;
+use Codefog\HasteBundle\Formatter;
 
 class Label extends Backend
 {
@@ -27,15 +27,17 @@ class Label extends Backend
      */
     public function generate($row, $label, $dc, $args)
     {
+        /** @var Formatter $formatter */
+        $formatter = \Contao\System::getContainer()->get(Formatter::class);
         foreach ($GLOBALS['TL_DCA'][$dc->table]['list']['label']['fields'] as $i => $field) {
             if ('name' === $field && $row['fallback']) {
                 $args[$i] = sprintf(
                     '%s <span style="color:#b3b3b3; padding-left:3px;">[%s]</span>',
                     $row['name'],
-                    Format::dcaLabel($dc->table, 'fallback')
+                    $formatter->dcaLabel($dc->table, 'fallback')
                 );
             } else {
-                $args[$i] = Format::dcaValue($dc->table, $field, $row[$field]);
+                $args[$i] = $formatter->dcaValue($dc->table, $field, $row[$field]);
             }
         }
 

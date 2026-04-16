@@ -94,8 +94,8 @@ class Label
             foreach ($arrImages as $image) {
                 $strImage = 'isotope/' . strtolower(substr($image['src'], 0, 1)) . '/' . $image['src'];
 
-                if (is_file(TL_ROOT . '/' . $strImage)) {
-                    $size = @getimagesize(TL_ROOT . '/' . $strImage);
+                if (is_file(\Contao\System::getContainer()->getParameter('kernel.project_dir') . '/' . $strImage)) {
+                    $size = @getimagesize(\Contao\System::getContainer()->getParameter('kernel.project_dir') . '/' . $strImage);
 
                     $script = sprintf(
                         "Backend.openModalImage({'width':%s,'title':'%s','url':'%s'});return false",

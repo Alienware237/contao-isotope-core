@@ -15,7 +15,6 @@ namespace Isotope\Report;
 use Contao\Database;
 use Contao\Date;
 use Contao\Message;
-use Contao\Session;
 use Haste\Generator\RowClass;
 use Isotope\Report\Period\PeriodFactory;
 use Isotope\Report\Period\PeriodInterface;
@@ -30,7 +29,7 @@ class MembersRegistration extends Sales
 
     protected function compile(): void
     {
-        $arrSession    = Session::getInstance()->get('iso_reports');
+        $arrSession    = \Contao\System::getContainer()->get('request_stack')->getSession()->get('iso_reports');
 
         $strPeriod = (string) $arrSession[$this->name]['period'];
         $intStart  = (int) $arrSession[$this->name]['start'];
@@ -159,7 +158,7 @@ class MembersRegistration extends Sales
     protected function initializeDefaultValues(): void
     {
         // Set default session data
-        $arrSession = Session::getInstance()->get('iso_reports');
+        $arrSession = \Contao\System::getContainer()->get('request_stack')->getSession()->get('iso_reports');
 
         if (empty($arrSession[$this->name]['period'])) {
             $arrSession[$this->name]['period'] = 'month';
@@ -191,7 +190,7 @@ class MembersRegistration extends Sales
             }
         }
 
-        Session::getInstance()->set('iso_reports', $arrSession);
+        \Contao\System::getContainer()->get('request_stack')->getSession()->set('iso_reports', $arrSession);
 
         parent::initializeDefaultValues();
     }

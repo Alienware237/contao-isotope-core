@@ -13,7 +13,6 @@ namespace Isotope\Report;
 
 use Contao\Date;
 use Contao\Message;
-use Contao\Session;
 use Isotope\Model\OrderStatus;
 
 abstract class Sales extends Report
@@ -33,7 +32,7 @@ abstract class Sales extends Report
     protected function initializeDefaultValues()
     {
         // Set default session data
-        $arrSession = Session::getInstance()->get('iso_reports');
+        $arrSession = \Contao\System::getContainer()->get('request_stack')->getSession()->get('iso_reports');
 
         if (empty($arrSession[$this->name]['period'])) {
             $arrSession[$this->name]['period'] = 'month';
@@ -60,13 +59,13 @@ abstract class Sales extends Report
             }
         }
 
-        Session::getInstance()->set('iso_reports', $arrSession);
+        \Contao\System::getContainer()->get('request_stack')->getSession()->set('iso_reports', $arrSession);
     }
 
 
     protected function getSelectFromPanel()
     {
-        $arrSession = Session::getInstance()->get('iso_reports');
+        $arrSession = \Contao\System::getContainer()->get('request_stack')->getSession()->get('iso_reports');
 
         return [
             'name'      => 'from',
@@ -81,7 +80,7 @@ abstract class Sales extends Report
 
     protected function getSelectColumnsPanel()
     {
-        $arrSession = Session::getInstance()->get('iso_reports');
+        $arrSession = \Contao\System::getContainer()->get('request_stack')->getSession()->get('iso_reports');
 
         return [
             'name'  => 'columns',
@@ -145,7 +144,7 @@ abstract class Sales extends Report
             }
         }
 
-        $arrSession = Session::getInstance()->get('iso_reports');
+        $arrSession = \Contao\System::getContainer()->get('request_stack')->getSession()->get('iso_reports');
         $varValue = (int) ($arrSession[$this->name]['iso_status'] ?? 0);
 
         return [
@@ -162,7 +161,7 @@ abstract class Sales extends Report
 
     protected function getDateFieldPanel()
     {
-        $arrSession = Session::getInstance()->get('iso_reports');
+        $arrSession = \Contao\System::getContainer()->get('request_stack')->getSession()->get('iso_reports');
         $varValue = $arrSession[$this->name]['date_field'];
 
         return [

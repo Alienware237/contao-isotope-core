@@ -14,7 +14,6 @@ namespace Isotope\Report;
 use Contao\Database;
 use Contao\Date;
 use Contao\Message;
-use Contao\Session;
 use Isotope\Isotope;
 use Isotope\Model\Config;
 use Haste\Generator\RowClass;
@@ -34,7 +33,7 @@ class SalesTotal extends Sales
 
     protected function compile()
     {
-        $arrSession    = Session::getInstance()->get('iso_reports');
+        $arrSession    = \Contao\System::getContainer()->get('request_stack')->getSession()->get('iso_reports');
 
         $intConfig = (int) ($arrSession[$this->name]['iso_config'] ?? 0);
         $strPeriod = (string) $arrSession[$this->name]['period'];
@@ -199,7 +198,7 @@ class SalesTotal extends Sales
 
     protected function initializeChart(PeriodInterface $period, $intStart, $intStop)
     {
-        $arrSession  = Session::getInstance()->get('iso_reports');
+        $arrSession  = \Contao\System::getContainer()->get('request_stack')->getSession()->get('iso_reports');
         $intConfig   = (int) ($arrSession[$this->name]['iso_config'] ?? 0);
         $intStart    = strtotime('first day of this month', $intStart);
 
@@ -263,7 +262,7 @@ class SalesTotal extends Sales
     protected function initializeDefaultValues()
     {
         // Set default session data
-        $arrSession = Session::getInstance()->get('iso_reports');
+        $arrSession = \Contao\System::getContainer()->get('request_stack')->getSession()->get('iso_reports');
 
         if (empty($arrSession[$this->name]['period'])) {
             $arrSession[$this->name]['period'] = 'month';
@@ -295,7 +294,7 @@ class SalesTotal extends Sales
             }
         }
 
-        Session::getInstance()->set('iso_reports', $arrSession);
+        \Contao\System::getContainer()->get('request_stack')->getSession()->set('iso_reports', $arrSession);
 
         parent::initializeDefaultValues();
     }

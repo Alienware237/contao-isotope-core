@@ -30,7 +30,6 @@ class Callback extends Backend
     {
         parent::__construct();
 
-        $this->import('BackendUser', 'User');
     }
 
     /**
@@ -113,7 +112,8 @@ class Callback extends Backend
         }
 
         // Check permissions AFTER checking the tid, so hacking attempts are logged
-        if (!$this->User->isAdmin && !$this->User->hasAccess('tl_iso_rule::enabled', 'alexf')) {
+        $user = \Contao\BackendUser::getInstance();
+        if (!$user->isAdmin && !$user->hasAccess('tl_iso_rule::enabled', 'alexf')) {
             return Image::getHtml($icon, $label) . ' ';
         }
 
@@ -138,8 +138,9 @@ class Callback extends Backend
 //        Input::setGet('act', 'toggle');
 //        $this->checkPermission();
 
+        $user = \Contao\BackendUser::getInstance();
         // Check permissions to publish
-        if (!$this->User->isAdmin && !$this->User->hasAccess('tl_iso_rule::enabled', 'alexf')) {
+        if (!$user->isAdmin && !$user->hasAccess('tl_iso_rule::enabled', 'alexf')) {
             throw new AccessDeniedException('Not enough permissions to enable/disable rule ID "' . $intId . '"');
         }
 

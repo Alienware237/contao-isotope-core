@@ -14,7 +14,6 @@ namespace Isotope\Report;
 use Contao\Database;
 use Contao\Date;
 use Contao\Message;
-use Contao\Session;
 use Haste\Generator\RowClass;
 use Isotope\Isotope;
 use Isotope\Model\Config;
@@ -30,7 +29,7 @@ class MembersTotal extends Sales
 
     protected function compile()
     {
-        $arrSession = Session::getInstance()->get('iso_reports');
+        $arrSession = \Contao\System::getContainer()->get('request_stack')->getSession()->get('iso_reports');
 
         $intConfig = (int) ($arrSession[$this->name]['iso_config'] ?? 0);
         $intStart = (int) ($arrSession[$this->name]['start'] ?? 0);
@@ -287,7 +286,7 @@ class MembersTotal extends Sales
     protected function initializeDefaultValues(): void
     {
         // Set default session data
-        $arrSession = Session::getInstance()->get('iso_reports');
+        $arrSession = \Contao\System::getContainer()->get('request_stack')->getSession()->get('iso_reports');
 
         if (empty($arrSession[$this->name]['stop'])) {
             $arrSession[$this->name]['stop'] = time();
@@ -315,7 +314,7 @@ class MembersTotal extends Sales
             }
         }
 
-        Session::getInstance()->set('iso_reports', $arrSession);
+        \Contao\System::getContainer()->get('request_stack')->getSession()->set('iso_reports', $arrSession);
 
         parent::initializeDefaultValues();
     }

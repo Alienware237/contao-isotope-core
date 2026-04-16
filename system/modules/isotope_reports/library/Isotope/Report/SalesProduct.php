@@ -12,7 +12,6 @@
 namespace Isotope\Report;
 
 use Contao\Database;
-use Contao\Session;
 use Contao\StringUtil;
 use Isotope\Isotope;
 use Isotope\Model\ProductType;
@@ -36,7 +35,7 @@ class SalesProduct extends Sales
 
     protected function compile()
     {
-        $arrSession = Session::getInstance()->get('iso_reports')
+        $arrSession = \Contao\System::getContainer()->get('request_stack')->getSession()->get('iso_reports')
         ;
 
         $strPeriod = (string) $arrSession[$this->name]['period'];
@@ -223,7 +222,7 @@ class SalesProduct extends Sales
 
     protected function getSelectVariantsPanel()
     {
-        $arrSession = Session::getInstance()->get('iso_reports');
+        $arrSession = \Contao\System::getContainer()->get('request_stack')->getSession()->get('iso_reports');
 
         return array(
             'name' => 'variants',
@@ -252,14 +251,14 @@ class SalesProduct extends Sales
         );
 
         // Set default session data
-        $arrSession = Session::getInstance()->get('iso_reports')
+        $arrSession = \Contao\System::getContainer()->get('request_stack')->getSession()->get('iso_reports')
         ;
 
         if (empty($arrSession[$this->name]['tl_sort'])) {
             $arrSession[$this->name]['tl_sort'] = 'total';
         }
 
-        Session::getInstance()->set('iso_reports', $arrSession)
+        \Contao\System::getContainer()->get('request_stack')->getSession()->set('iso_reports', $arrSession)
         ;
 
         parent::initializeDefaultValues();

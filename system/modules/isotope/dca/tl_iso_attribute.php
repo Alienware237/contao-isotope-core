@@ -9,10 +9,16 @@
  * @license    https://opensource.org/licenses/lgpl-3.0.html
  */
 
+use Contao\Config;
+use Contao\DC_Table;
+
 /**
  * Load tl_iso_product language file for field legends
  */
 \Contao\System::loadLanguageFile('tl_iso_product');
+
+$container = \Contao\System::getContainer();
+
 
 
 /**
@@ -24,7 +30,7 @@ $GLOBALS['TL_DCA']['tl_iso_attribute'] = array
     // Config
     'config' => array
     (
-        'dataContainer'             => 'Table',
+        'dataContainer'             => DC_Table::class,
         'enableVersioning'          => true,
         'backlink'                  => 'do=iso_setup',
         'ctable'                    => array(\Isotope\Model\AttributeOption::getTable()),
@@ -373,7 +379,7 @@ $GLOBALS['TL_DCA']['tl_iso_attribute'] = array
         'extensions' => array
         (
             'exclude'               => true,
-            'default'               => $GLOBALS['TL_CONFIG']['validImageTypes'],
+            'default'               => $container->getParameter('contao.image.valid_extensions'),
             'inputType'             => 'text',
             'eval'                  => array('mandatory'=>true, 'rgxp'=>'extnd', 'maxlength'=>255, 'tl_class'=>'w50'),
             'sql'                   => "varchar(255) NOT NULL default ''",

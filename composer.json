@@ -32,23 +32,23 @@
         "docs": "https://docs.isotopeecommerce.org/"
     },
     "require":{
-        "php": "^7.4 || ^8.0",
+        "php": ">=8.3",
         "composer-runtime-api": "^2",
-        "contao/core-bundle": "^4.13",
-        "contao-community-alliance/composer-plugin": "^2.4 || ^3.0",
-        "doctrine/dbal": "^3.0",
-        "terminal42/contao-conditionalselectmenu":"^3.0.3 || ^4.0",
-        "terminal42/dcawizard": "^2.3 || ^3.0",
-        "codefog/contao-haste": "^4.24.3",
-        "menatwork/contao-multicolumnwizard-bundle": "^3.4",
-        "terminal42/contao-tablelookupwizard": "^3.2 || ^4.0",
-        "terminal42/notification_center": "^1.0",
+        "contao/core-bundle": "^5.7",
+        "contao-community-alliance/composer-plugin": "^3.0",
+        "doctrine/dbal": "^3.0 || ^4.0",
+        "terminal42/contao-conditionalselectmenu": "^4.0",
+        "terminal42/dcawizard": "^3.0",
+        "codefog/contao-haste": "5.4.1",
+        "menatwork/contao-multicolumnwizard-bundle": "^3.6",
+        "terminal42/contao-tablelookupwizard": "^5.0",
+        "terminal42/notification_center": "^2.0",
         "terminal42/dc_multilingual": "^4.0",
-        "tecnickcom/tcpdf": "^6.2.22",
-        "symfony/filesystem": "^5.4 || ^6.0",
-        "symfony/http-client": "^5.4 || ^6.0",
-        "symfony/string": "^5.4 || ^6.0",
-        "symfony/polyfill-php80": "^1.25",
+        "tecnickcom/tcpdf": "^6.2",
+        "symfony/filesystem": "^6.4 || ^7.0",
+        "symfony/http-client": "^6.4 || ^7.0",
+        "symfony/string": "^6.4 || ^7.0",
+        "symfony/polyfill-php80": "^1.33",
         "hashids/hashids": "^4.1"
     },
     "require-dev": {
@@ -86,7 +86,7 @@
             ]
         },
         "classmap": [
-            "system/modules/isotope/drivers/"
+          "system/modules/isotope/drivers/"
         ]
     },
     "config": {

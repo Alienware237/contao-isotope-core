@@ -13,8 +13,8 @@ $lang = (object) $GLOBALS['TL_LANG']['XPT'];
   <meta name="generator" content="Contao Open Source CMS">
 
   <style><?php
-    include TL_ROOT . '/system/themes/default/basic.css';
-    include TL_ROOT . '/system/themes/default/error.css';
+    include \Contao\System::getContainer()->getParameter('kernel.project_dir') . '/system/themes/default/basic.css';
+    include \Contao\System::getContainer()->getParameter('kernel.project_dir') . '/system/themes/default/error.css';
   ?></style>
 
 </head>

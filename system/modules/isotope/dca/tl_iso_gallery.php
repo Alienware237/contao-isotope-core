@@ -9,6 +9,9 @@
  * @license    https://opensource.org/licenses/lgpl-3.0.html
  */
 
+use Contao\Config;
+use Contao\DC_Table;
+
 /**
  * Table tl_iso_gallery
  */
@@ -18,7 +21,7 @@ $GLOBALS['TL_DCA']['tl_iso_gallery'] = array
     // Config
     'config' => array
     (
-        'dataContainer'             => 'Table',
+        'dataContainer'             => DC_Table::class,
         'enableVersioning'          => true,
         'backlink'                  => 'do=iso_setup',
         'onload_callback' => array
@@ -141,7 +144,7 @@ $GLOBALS['TL_DCA']['tl_iso_gallery'] = array
         (
             'exclude'               => true,
             'inputType'             => 'fileTree',
-            'eval'                  => array('fieldType'=>'radio', 'files'=>true, 'filesOnly'=>true, 'extensions'=>$GLOBALS['TL_CONFIG']['validImageTypes'], 'tl_class'=>'w50 w50h'),
+            'eval'                  => array('fieldType'=>'radio', 'files'=>true, 'filesOnly'=>true, 'extensions'=>Config::get('validImageTypes'), 'tl_class'=>'w50 w50h'),
             'sql'                   => "binary(16) NULL",
         ),
         'main_size' => array
@@ -149,7 +152,7 @@ $GLOBALS['TL_DCA']['tl_iso_gallery'] = array
             'exclude'               => true,
             'inputType'             => 'imageSize',
             'options_callback'      => function () {
-                return \Contao\System::getImageSizes();
+                return \Contao\System::getContainer()->get('contao.image.sizes')->getAllOptions();
             },
             'reference'             => &$GLOBALS['TL_LANG']['MSC'],
             'eval'                  => array('includeBlankOption'=>true, 'rgxp'=>'digit', 'nospace'=>true, 'helpwizard'=>true, 'tl_class'=>'w50'),
@@ -160,7 +163,7 @@ $GLOBALS['TL_DCA']['tl_iso_gallery'] = array
             'exclude'               => true,
             'inputType'             => 'imageSize',
             'options_callback'      => function () {
-                return \Contao\System::getImageSizes();
+                return \Contao\System::getContainer()->get('contao.image.sizes')->getAllOptions();
             },
             'reference'             => &$GLOBALS['TL_LANG']['MSC'],
             'eval'                  => array('includeBlankOption'=>true, 'rgxp'=>'digit', 'nospace'=>true, 'helpwizard'=>true, 'tl_class'=>'w50'),
@@ -186,7 +189,7 @@ $GLOBALS['TL_DCA']['tl_iso_gallery'] = array
             'exclude'               => true,
             'inputType'             => 'imageSize',
             'options_callback'      => function () {
-                return \Contao\System::getImageSizes();
+                return \Contao\System::getContainer()->get('contao.image.sizes')->getAllOptions();
             },
             'reference'             => &$GLOBALS['TL_LANG']['MSC'],
             'eval'                  => array('includeBlankOption'=>true, 'rgxp'=>'digit', 'nospace'=>true, 'helpwizard'=>true, 'tl_class'=>'w50'),
@@ -197,7 +200,7 @@ $GLOBALS['TL_DCA']['tl_iso_gallery'] = array
             'exclude'               => true,
             'inputType'             => 'imageSize',
             'options_callback'      => function () {
-                return \Contao\System::getImageSizes();
+                return \Contao\System::getContainer()->get('contao.image.sizes')->getAllOptions();
             },
             'reference'             => &$GLOBALS['TL_LANG']['MSC'],
             'eval'                  => array('includeBlankOption'=>true, 'rgxp'=>'digit', 'nospace'=>true, 'helpwizard'=>true, 'tl_class'=>'w50'),
@@ -268,7 +271,7 @@ $GLOBALS['TL_DCA']['tl_iso_gallery'] = array
         (
             'exclude'               => true,
             'inputType'             => 'fileTree',
-            'eval'                  => array('fieldType'=>'radio', 'files'=>true, 'filesOnly'=>true, 'extensions'=>$GLOBALS['TL_CONFIG']['validImageTypes'], 'tl_class'=>'clr w50 w50h'),
+            'eval'                  => array('fieldType'=>'radio', 'files'=>true, 'filesOnly'=>true, 'extensions'=>Config::get('validImageTypes'), 'tl_class'=>'clr w50 w50h'),
             'sql'                   => "binary(16) NULL",
         ),
         'main_watermark_position' => array
@@ -284,7 +287,7 @@ $GLOBALS['TL_DCA']['tl_iso_gallery'] = array
         (
             'exclude'               => true,
             'inputType'             => 'fileTree',
-            'eval'                  => array('fieldType'=>'radio', 'files'=>true, 'filesOnly'=>true, 'extensions'=>$GLOBALS['TL_CONFIG']['validImageTypes'], 'tl_class'=>'clr w50 w50h'),
+            'eval'                  => array('fieldType'=>'radio', 'files'=>true, 'filesOnly'=>true, 'extensions'=>Config::get('validImageTypes'), 'tl_class'=>'clr w50 w50h'),
             'sql'                   => "binary(16) NULL",
         ),
         'gallery_watermark_position' => array
@@ -300,7 +303,7 @@ $GLOBALS['TL_DCA']['tl_iso_gallery'] = array
         (
             'exclude'               => true,
             'inputType'             => 'fileTree',
-            'eval'                  => array('fieldType'=>'radio', 'files'=>true, 'filesOnly'=>true, 'extensions'=>$GLOBALS['TL_CONFIG']['validImageTypes'], 'tl_class'=>'clr w50 w50h'),
+            'eval'                  => array('fieldType'=>'radio', 'files'=>true, 'filesOnly'=>true, 'extensions'=>Config::get('validImageTypes'), 'tl_class'=>'clr w50 w50h'),
             'sql'                   => "binary(16) NULL",
         ),
         'lightbox_watermark_position' => array
@@ -316,7 +319,7 @@ $GLOBALS['TL_DCA']['tl_iso_gallery'] = array
         (
             'exclude'               => true,
             'inputType'             => 'fileTree',
-            'eval'                  => array('fieldType'=>'radio', 'files'=>true, 'filesOnly'=>true, 'extensions'=>$GLOBALS['TL_CONFIG']['validImageTypes'], 'tl_class'=>'clr w50 w50h'),
+            'eval'                  => array('fieldType'=>'radio', 'files'=>true, 'filesOnly'=>true, 'extensions'=>Config::get('validImageTypes'), 'tl_class'=>'clr w50 w50h'),
             'sql'                   => "binary(16) NULL",
         ),
         'zoom_watermark_position' => array

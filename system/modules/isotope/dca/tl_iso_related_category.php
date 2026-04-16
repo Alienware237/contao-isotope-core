@@ -9,6 +9,8 @@
  * @license    https://opensource.org/licenses/lgpl-3.0.html
  */
 
+use Contao\DC_Table;
+
 /**
  * Table tl_iso_related_category
  */
@@ -18,7 +20,7 @@ $GLOBALS['TL_DCA']['tl_iso_related_category'] = array
     // Config
     'config' => array
     (
-        'dataContainer'         => 'Table',
+        'dataContainer'         => DC_Table::class,
         'enableVersioning'      => true,
         'backlink'              => 'do=iso_setup',
         'sql' => array

@@ -9,7 +9,12 @@
  * @license    https://opensource.org/licenses/lgpl-3.0.html
  */
 
-\Contao\System::loadLanguageFile(\Isotope\Model\ProductType::getTable());
+use Contao\Config;
+use Contao\System;
+use Isotope\Model\ProductType;
+
+
+System::loadLanguageFile(ProductType::getTable());
 
 /**
  * Table tl_iso_product
@@ -21,7 +26,7 @@ $GLOBALS['TL_DCA']['tl_iso_product'] = array
     'config' => array
     (
         'label'                     => &$GLOBALS['TL_LANG']['MOD']['iso_products'][0],
-        'dataContainer'             => 'ProductData',
+        'dataContainer'             => 'DC_ProductData',
         'enableVersioning'          => true,
         'switchToEdit'              => true,
         'ctable'                    => array(\Isotope\Model\Download::getTable(), \Isotope\Model\ProductCategory::getTable(), \Isotope\Model\ProductPrice::getTable(), \Isotope\Model\AttributeOption::getTable()),
@@ -520,7 +525,7 @@ $GLOBALS['TL_DCA']['tl_iso_product'] = array
             'exclude'               => true,
             'inputType'             => 'mediaManager',
             'explanation'           => 'mediaManager',
-            'eval'                  => array('extensions'=>$GLOBALS['TL_CONFIG']['validImageTypes'], 'helpwizard'=>true, 'tl_class'=>'clr'),
+            'eval'                  => array('extensions'=>Config::get('validImageTypes'), 'helpwizard'=>true, 'tl_class'=>'clr'),
             'attributes'            => array('legend'=>'media_legend', 'fixed'=>true, 'multilingual'=>true, 'dynamic'=>true, 'systemColumn'=>true, 'fetch_fallback'=>true),
             'sql'                   => "blob NULL",
         ),

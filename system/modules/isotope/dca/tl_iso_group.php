@@ -9,6 +9,8 @@
  * @license    https://opensource.org/licenses/lgpl-3.0.html
  */
 
+use Contao\DC_Table;
+
 /**
  * Table tl_iso_group
  */
@@ -18,7 +20,7 @@ $GLOBALS['TL_DCA']['tl_iso_group'] = array
     // Config
     'config' => array
     (
-        'dataContainer'             => 'Table',
+        'dataContainer'             => DC_Table::class,
         'label'                     => &$GLOBALS['TL_LANG']['tl_iso_group']['label'],
         'backlink'                  => \Contao\Input::get('popup') ? null : 'do=iso_products',
         'enableVersioning'          => true,

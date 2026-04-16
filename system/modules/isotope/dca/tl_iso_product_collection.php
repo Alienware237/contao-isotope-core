@@ -9,6 +9,8 @@
  * @license    https://opensource.org/licenses/lgpl-3.0.html
  */
 
+use Contao\DC_Table;
+
 /**
  * Load tl_iso_product data container and language files
  */
@@ -25,7 +27,7 @@ $GLOBALS['TL_DCA']['tl_iso_product_collection'] = array
     // Config
     'config' => array
     (
-        'dataContainer'             => 'Table',
+        'dataContainer'             => DC_Table::class,
         'enableVersioning'          => false,
         'ctable'                    => array(\Isotope\Model\ProductCollectionItem::getTable(), \Isotope\Model\ProductCollectionLog::getTable(), \Isotope\Model\ProductCollectionSurcharge::getTable(), \Isotope\Model\Address::getTable()),
         'closed'                    => true,

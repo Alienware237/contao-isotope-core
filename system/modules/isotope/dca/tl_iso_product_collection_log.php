@@ -9,6 +9,8 @@
  * @license    https://opensource.org/licenses/lgpl-3.0.html
  */
 
+use Contao\DC_Table;
+
 /**
  * Table tl_iso_product_collection_log
  */
@@ -16,7 +18,7 @@ $GLOBALS['TL_DCA']['tl_iso_product_collection_log'] = [
 
     // Config
     'config' => [
-        'dataContainer' => 'Table',
+        'dataContainer' => DC_Table::class,
         'ptable' => \Isotope\Model\ProductCollection::getTable(),
         'sql' => [
             'keys' => [

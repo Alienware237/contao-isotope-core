@@ -9,6 +9,8 @@
  * @license    https://opensource.org/licenses/lgpl-3.0.html
  */
 
+use Contao\DC_Table;
+
 /**
  * Table tl_iso_address
  */
@@ -18,7 +20,7 @@ $GLOBALS['TL_DCA']['tl_iso_address'] = array
     // Config
     'config' => array
     (
-        'dataContainer'             => 'Table',
+        'dataContainer'             => DC_Table::class,
         'enableVersioning'          => false,
         'ptable'                    => '',
         'dynamicPtable'             => true,
@@ -238,7 +240,7 @@ $GLOBALS['TL_DCA']['tl_iso_address'] = array
             'filter'                => true,
             'sorting'               => true,
             'inputType'             => 'select',
-            'options'               => \Contao\System::getCountries(),
+            'options'               => \Contao\System::getContainer()->get('contao.intl.countries')->getCountries(),
             // Do not use options_callback, countries are modified by store config in the frontend
             'eval'                  => array('mandatory'=>true, 'feEditable'=>true, 'feGroup'=>'address', 'tl_class'=>'w50', 'chosen'=>true),
             'sql'                   => "varchar(32) NOT NULL default ''",

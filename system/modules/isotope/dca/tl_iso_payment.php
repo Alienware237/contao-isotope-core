@@ -9,6 +9,8 @@
  * @license    https://opensource.org/licenses/lgpl-3.0.html
  */
 
+use Contao\DC_Table;
+
 /**
  * Table tl_iso_payment
  */
@@ -18,7 +20,7 @@ $GLOBALS['TL_DCA']['tl_iso_payment'] = array
     // Config
     'config' => array
     (
-        'dataContainer'             => 'Table',
+        'dataContainer'             => DC_Table::class,
         'enableVersioning'          => true,
         'backlink'                  => 'do=iso_setup',
         'onload_callback' => array
@@ -270,7 +272,7 @@ $GLOBALS['TL_DCA']['tl_iso_payment'] = array
             'exclude'               => true,
             'inputType'             => 'select',
             'options_callback'      => function() {
-                return \Contao\System::getCountries();
+                return \Contao\System::getContainer()->get('contao.intl.countries')->getCountries();
             },
             'eval'                  => array('multiple'=>true, 'size'=>8, 'tl_class'=>'w50 w50h', 'chosen'=>true),
             'sql'                   => "blob NULL",

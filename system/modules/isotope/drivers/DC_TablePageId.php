@@ -37,7 +37,7 @@ class DC_TablePageId extends DC_Table
         $this->limit = '';
 
         /** @var Session $objSession */
-        $objSession = System::getContainer()->get('session');
+        $objSession = System::getContainer()->get('request_stack')->getSession();
 
         $this->reviseTable();
 
@@ -127,7 +127,7 @@ class DC_TablePageId extends DC_Table
         }
 
         /** @var Session $objSession */
-        $objSession = System::getContainer()->get('session');
+        $objSession = System::getContainer()->get('request_stack')->getSession();
 
         // Empty clipboard
         $arrClipboard = $objSession->get('CLIPBOARD');
@@ -146,7 +146,7 @@ class DC_TablePageId extends DC_Table
         if ($this->strTable == 'tl_style')
         {
             /** @var AttributeBagInterface $objSessionBag */
-            $objSessionBag = $objSession->getBag('contao_backend');
+            $objSessionBag = $objSession->getBag('contao');
 
             $filter = $objSessionBag->get('filter');
             $category = $filter['tl_style_' . CURRENT_ID]['category'];
@@ -209,7 +209,7 @@ class DC_TablePageId extends DC_Table
         }
 
         /** @var Session $objSession */
-        $objSession = System::getContainer()->get('session');
+        $objSession = System::getContainer()->get('request_stack')->getSession();
 
         $arrClipboard = $objSession->get('CLIPBOARD');
 
@@ -253,7 +253,7 @@ class DC_TablePageId extends DC_Table
                 $filter = ($GLOBALS['TL_DCA'][$this->strTable]['list']['sorting']['mode'] == 4) ? $this->strTable . '_' . CURRENT_ID : $this->strTable;
 
                 /** @var Session $objSession */
-                $objSession = System::getContainer()->get('session');
+                $objSession = System::getContainer()->get('request_stack')->getSession();
                 $session = $objSession->all();
 
                 // Consider the pagination menu when inserting at the top (see #7895)
@@ -508,7 +508,7 @@ class DC_TablePageId extends DC_Table
         }
 
         /** @var AttributeBagInterface $objSessionBag */
-        $objSessionBag = System::getContainer()->get('session')->getBag('contao_backend');
+        $objSessionBag = System::getContainer()->get('session')->getBag('contao');
 
         $new_records = $objSessionBag->get('new_records');
 
@@ -667,7 +667,7 @@ class DC_TablePageId extends DC_Table
     protected function parentView()
     {
         /** @var Session $objSession */
-        $objSession = System::getContainer()->get('session');
+        $objSession = System::getContainer()->get('request_stack')->getSession();
 
         $blnClipboard = false;
         $arrClipboard = $objSession->get('CLIPBOARD');
@@ -734,7 +734,7 @@ class DC_TablePageId extends DC_Table
         // List all records of the child table
         if (!Input::get('act') || \in_array(Input::get('act'), array('paste', 'select')))
         {
-            $this->import(BackendUser::class, 'User');
+            $user = BackendUser::getInstance();
 
             // Header
             $imagePasteNew = Image::getHtml('new.svg', $labelPasteNew[0]);
@@ -744,7 +744,7 @@ class DC_TablePageId extends DC_Table
             $return .= '
 <div class="tl_content_right">' . ((Input::get('act') == 'select' || $this->strPickerFieldType == 'checkbox') ? '
 <label for="tl_select_trigger" class="tl_select_label">' . $GLOBALS['TL_LANG']['MSC']['selectAll'] . '</label> <input type="checkbox" id="tl_select_trigger" onclick="Backend.toggleCheckboxes(this)" class="tl_tree_checkbox">' : ($blnClipboard ? '
-<a href="' . $this->addToUrl('act=' . $arrClipboard['mode'] . '&amp;mode=2&amp;page_id=' . $objParent->id . (!$blnMultiboard ? '&amp;id=' . $arrClipboard['id'] : '')) . '" title="' . StringUtil::specialchars($labelPasteAfter[0]) . '" onclick="Backend.getScrollOffset()">' . $imagePasteAfter . '</a>' : ((!($GLOBALS['TL_DCA'][$this->ptable]['config']['notEditable'] ?? null) && $this->User->canEditFieldsOf($this->ptable)) ? '
+<a href="' . $this->addToUrl('act=' . $arrClipboard['mode'] . '&amp;mode=2&amp;page_id=' . $objParent->id . (!$blnMultiboard ? '&amp;id=' . $arrClipboard['id'] : '')) . '" title="' . StringUtil::specialchars($labelPasteAfter[0]) . '" onclick="Backend.getScrollOffset()">' . $imagePasteAfter . '</a>' : ((!($GLOBALS['TL_DCA'][$this->ptable]['config']['notEditable'] ?? null) && $user->canEditFieldsOf($this->ptable)) ? '
 <a href="' . preg_replace('/&(amp;)?table=[^& ]*/i', ($this->ptable ? '&amp;table=' . $this->ptable : ''), $this->addToUrl('act=edit' . (Input::get('nb') ? '&amp;nc=1' : ''))) . '" class="edit" title="' . StringUtil::specialchars(sprintf(\is_array($labelEditHeader) ? $labelEditHeader[1] : $labelEditHeader, $objParent->id)) . '">' . $imageEditHeader . '</a> ' . $this->generateHeaderButtons($objParent->row(), $this->ptable) : '') . (($blnHasSorting && !($GLOBALS['TL_DCA'][$this->strTable]['config']['closed'] ?? null) && !($GLOBALS['TL_DCA'][$this->strTable]['config']['notCreatable'] ?? null)) ? '
 <a href="' . $this->addToUrl('act=create&amp;mode=2&amp;page_id=' . $objParent->id . '&amp;id=' . $this->intId) . '" title="' . StringUtil::specialchars($labelPasteNew[0]) . '">' . $imagePasteNew . '</a>' : ''))) . '
 </div>';

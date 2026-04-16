@@ -14,7 +14,7 @@ namespace Isotope\Backend;
 use Contao\Backend;
 use Contao\BackendUser;
 use Contao\Database;
-use Contao\Session;
+use Contao\System;
 use Contao\StringUtil;
 
 class Permission extends Backend
@@ -32,7 +32,7 @@ class Permission extends Backend
     protected function addNewRecordPermissions($id, $table, $accessField, $permissionField)
     {
         $user    = BackendUser::getInstance();
-        $session = Session::getInstance();
+        $session = System::getContainer()->get('request_stack')->getSession();
         $db      = Database::getInstance();
         $groups  = StringUtil::deserialize($user->groups);
 

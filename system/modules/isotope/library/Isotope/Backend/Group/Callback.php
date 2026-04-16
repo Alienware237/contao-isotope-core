@@ -18,7 +18,7 @@ use Contao\Database;
 use Contao\DataContainer;
 use Contao\Image;
 use Contao\Input;
-use Contao\Session;
+use Contao\System;
 use Contao\StringUtil;
 use Isotope\Backend\Permission;
 use Isotope\Model\Group;
@@ -43,7 +43,7 @@ class Callback extends Permission
     {
         /** @var BackendUser $user */
         $user    = BackendUser::getInstance();
-        $session = Session::getInstance();
+        $session = System::getContainer()->get('request_stack')->getSession();
 
         if ($user->isAdmin) {
             return;

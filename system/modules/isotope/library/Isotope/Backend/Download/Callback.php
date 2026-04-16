@@ -55,8 +55,8 @@ class Callback extends Backend
         if ('folder' === $objDownload->getRelated('singleSRC')->type) {
             $arrDownloads = array();
 
-            foreach (\Contao\Folder::scan(TL_ROOT . '/' . $path) as $file) {
-                if (is_file(TL_ROOT . '/' . $path . '/' . $file)) {
+            foreach (\Contao\Folder::scan(\Contao\System::getContainer()->getParameter('kernel.project_dir') . '/' . $path) as $file) {
+                if (is_file(\Contao\System::getContainer()->getParameter('kernel.project_dir') . '/' . $path . '/' . $file)) {
                     $objFile        = new File($path . '/' . $file);
                     $icon           = 'background:url(' . TL_ASSETS_URL . 'assets/contao/images/' . $objFile->icon . ') left center no-repeat; padding-left: 22px';
                     $arrDownloads[] = sprintf('<div style="margin-bottom:5px;height:16px;%s">%s</div>', $icon, $path . '/' . $file);
@@ -70,7 +70,7 @@ class Callback extends Backend
             return '<div style="margin-bottom:5px;height:16px;font-weight:bold">' . $path . '</div>' . implode("\n", $arrDownloads);
         }
 
-        if (is_file(TL_ROOT . '/' . $path)) {
+        if (is_file(\Contao\System::getContainer()->getParameter('kernel.project_dir') . '/' . $path)) {
             $objFile = new File($path);
             $icon    = 'background: url(' . TL_ASSETS_URL . 'assets/contao/images/' . $objFile->icon . ') left center no-repeat; padding-left: 22px';
         }

@@ -180,13 +180,13 @@ class Callback extends Backend
                             $title = sprintf($title, $dc->activeRecord->{$field});
                             $operations[] = sprintf(
                                 '<a href="%s" title="%s" onclick="Backend.openModalIframe({\'title\':\'%s\',\'url\':this.href});return false" class="%s">%s</a>',
-                                System::getContainer()->get('router')->generate('contao_backend', [
+                                System::getContainer()->get('router')->generate('contao', [
                                     'do' => $name,
                                     'table' => $relatedTable,
                                     'act' => 'show',
                                     'id' => $dc->activeRecord->{$field},
                                     'popup' => 1,
-                                    'rt' => REQUEST_TOKEN,
+                                    'rt' => $this->getCsrfToken(),
                                 ]),
                                 $title,
                                 $title,
@@ -201,12 +201,12 @@ class Callback extends Backend
                         ) {
                             array_unshift($operations, sprintf(
                                 '<a href="%s" title="%s" class="%s">%s</a>',
-                                System::getContainer()->get('router')->generate('contao_backend', [
+                                System::getContainer()->get('router')->generate('contao', [
                                     'do' => $name,
                                     'table' => $relatedTable,
                                     'act' => 'edit',
                                     'id' => $dc->activeRecord->{$field},
-                                    'rt' => REQUEST_TOKEN,
+                                    'rt' => $this->getCsrfToken(),
                                 ]),
                                 sprintf($GLOBALS['TL_DCA'][$relatedTable]['list']['operations']['edit']['label'][0], $dc->activeRecord->{$field}),
                                 $name,
@@ -349,27 +349,31 @@ class Callback extends Backend
      */
     public function checkPermission()
     {
-        $this->import('BackendUser', 'User');
+        // Fix for Contao 5: Do not use $this->import('BackendUser')
+        // Instead, get the instance directly via the class name with namespace
+        $objUser = BackendUser::getInstance();
 
-        if ($this->User->isAdmin) {
+        if ($objUser->isAdmin) {
             return;
         }
 
         // Only admins can delete orders. Others should set the order_status to cancelled.
         unset($GLOBALS['TL_DCA']['tl_iso_product_collection']['list']['operations']['delete']);
-        if ('delete' === Input::get('act') || 'deleteAll' === Input::get('act')) {
-            throw new AccessDeniedException('Only admin can delete orders!');
+
+        if ('delete' === \Contao\Input::get('act') || 'deleteAll' === \Contao\Input::get('act')) {
+            throw new \Contao\CoreBundle\Exception\AccessDeniedException('Only admin can delete orders!');
         }
 
         $arrIds = [0];
         $arrWhere = [];
 
-        $arrConfigs = $this->User->iso_configs;
+        // Use $objUser instead of $this->User
+        $arrConfigs = $objUser->iso_configs;
         if (\is_array($arrConfigs) && !empty($arrConfigs)) {
-            $arrWhere[] = 'config_id IN ('.implode(',', $arrConfigs).')';
+            $arrWhere[] = 'config_id IN ('.implode(',', array_map('intval', $arrConfigs)).')';
         }
 
-        $arrGroups = $this->User->iso_member_groups;
+        $arrGroups = $objUser->iso_member_groups;
         if (\is_array($arrGroups) && !empty($arrGroups)) {
             $blnGuests = \in_array(-1, $arrGroups, false);
             $arrLike = [];
@@ -385,7 +389,7 @@ class Callback extends Backend
             }
 
             if (!empty($arrLike)) {
-                $memberIds = Database::getInstance()->execute(
+                $memberIds = \Contao\Database::getInstance()->execute(
                     'SELECT id FROM tl_member WHERE '.implode(' OR ', $arrLike)
                 )->fetchEach('id');
             }
@@ -395,14 +399,14 @@ class Callback extends Backend
             }
 
             if (empty($memberIds)) {
-                $arrWhere[] = false;
+                $arrWhere[] = "1=0"; // Force empty result
             } else {
-                $arrWhere[] = 'member IN ('.implode(',', $memberIds).')';
+                $arrWhere[] = 'member IN ('.implode(',', array_map('intval', $memberIds)).')';
             }
         }
 
-        if (!empty($arrWhere) && !\in_array(false, $arrWhere, true)) {
-            $objOrders = Database::getInstance()->query(
+        if (!empty($arrWhere) && !\in_array("1=0", $arrWhere, true)) {
+            $objOrders = \Contao\Database::getInstance()->query(
                 'SELECT id FROM tl_iso_product_collection WHERE '.implode(' AND ', $arrWhere)
             );
 
@@ -413,8 +417,8 @@ class Callback extends Backend
 
         $GLOBALS['TL_DCA']['tl_iso_product_collection']['list']['sorting']['root'] = $arrIds;
 
-        if (Input::get('id') != '' && !\in_array(Input::get('id'), $arrIds)) {
-            throw new AccessDeniedException('Trying to access disallowed order ID ' . Input::get('id'));
+        if (\Contao\Input::get('id') != '' && !\in_array(\Contao\Input::get('id'), $arrIds)) {
+            throw new \Contao\CoreBundle\Exception\AccessDeniedException('Trying to access disallowed order ID ' . \Contao\Input::get('id'));
         }
     }
 
@@ -619,7 +623,7 @@ class Callback extends Backend
 <form id="tl_iso_product_import" class="tl_form" method="post">
 <div class="tl_formbody_edit">
 <input type="hidden" name="FORM_SUBMIT" value="tl_iso_print_document">
-<input type="hidden" name="REQUEST_TOKEN" value="' . REQUEST_TOKEN . '">
+<input type="hidden" name="REQUEST_TOKEN" value="' . $this->getCsrfToken() . '">
 
 <div class="block tl_tbox">
   <div class="clr widget">
@@ -927,5 +931,17 @@ class Callback extends Backend
         }
 
         return $options;
+    }
+
+    /**
+     * Get the current CSRF token
+     * @return string
+     */
+    protected function getCsrfToken()
+    {
+        $container = System::getContainer();
+        return $container->get('contao.csrf.token_manager')
+            ->getToken($container->getParameter('contao.csrf_token_name'))
+            ->getValue();
     }
 }

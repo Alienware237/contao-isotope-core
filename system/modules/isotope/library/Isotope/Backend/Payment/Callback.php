@@ -19,7 +19,6 @@ use Contao\Database;
 use Contao\DataContainer;
 use Contao\Image;
 use Contao\Input;
-use Contao\Session;
 use Contao\StringUtil;
 use Contao\System;
 use Contao\Versions;
@@ -94,13 +93,13 @@ class Callback extends Permission
             case 'editAll':
             case 'deleteAll':
             case 'overrideAll':
-                $session = Session::getInstance()->getData();
+                $session = \Contao\System::getContainer()->get('request_stack')->getSession()->all();
                 if ('deleteAll' === Input::get('act') && !$user->hasAccess('delete', 'iso_payment_modulep')) {
                     $session['CURRENT']['IDS'] = array();
                 } else {
                     $session['CURRENT']['IDS'] = array_intersect($session['CURRENT']['IDS'], $root);
                 }
-                Session::getInstance()->setData($session);
+                \Contao\System::getContainer()->get('request_stack')->getSession()->replace($session);
                 break;
 
             default:

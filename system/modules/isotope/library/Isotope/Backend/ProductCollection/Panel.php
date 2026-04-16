@@ -14,7 +14,6 @@ namespace Isotope\Backend\ProductCollection;
 use Contao\Backend;
 use Contao\BackendUser;
 use Contao\Database;
-use Contao\Session;
 use Contao\System;
 
 class Panel extends Backend
@@ -26,9 +25,14 @@ class Panel extends Backend
     public static function generateFilterButtons(): string
     {
         $user = BackendUser::getInstance();
-        $session = Session::getInstance()->getData();
+        $container = \Contao\System::getContainer();
+
+        $session = $container->get('request_stack')->getSession()->all();
         $intProduct = $session['filter']['tl_iso_product_collection']['iso_product'] ?? '';
         $buttons = [];
+
+        $tokenManager = $container->get('contao.csrf.token_manager');
+        $strToken = $tokenManager->getToken($container->getParameter('contao.csrf_token_name'))->getValue();
 
         // Check if user can manage products
         if ($user->hasAccess('page', 'modules')) {
@@ -45,7 +49,7 @@ class Panel extends Backend
             new Request.Contao({
               evalScripts: false,
               onRequest: AjaxRequest.displayBox(Contao.lang.loading + \' …\')
-            }).post({action:"filterProducts", value:value[0], REQUEST_TOKEN:"' . REQUEST_TOKEN . '"});
+            }).post({action:"filterProducts", value:value[0], REQUEST_TOKEN:"' . $strToken . '"});
           }
         })
       });
@@ -76,7 +80,7 @@ class Panel extends Backend
      */
     public function applyAdvancedFilters(): void
     {
-        $session = Session::getInstance()->getData();
+        $session = \Contao\System::getContainer()->get('request_stack')->getSession()->all();
 
         if (empty($session['filter']['tl_iso_product_collection']['iso_product'])) {
             return;

@@ -17,7 +17,7 @@ use Contao\Controller;
 use Contao\Database;
 use Contao\Environment;
 use Contao\Input;
-use Contao\Session;
+use Contao\System;
 use Contao\StringUtil;
 use Isotope\Model\Group;
 
@@ -34,7 +34,7 @@ class Breadcrumb extends Backend
     public static function generate($intId, $intProductId = null)
     {
         $arrGroups  = array();
-        $objSession = Session::getInstance();
+        $objSession = System::getContainer()->get('request_stack')->getSession();
 
         // Set a new gid
         if (isset($_GET['gid'])) {

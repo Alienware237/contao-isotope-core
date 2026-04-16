@@ -17,7 +17,6 @@ use Contao\BackendUser;
 use Contao\CoreBundle\Exception\AccessDeniedException;
 use Contao\Image;
 use Contao\Input;
-use Contao\Session;
 use Contao\StringUtil;
 use Isotope\Backend\Permission;
 
@@ -35,8 +34,7 @@ class Callback extends Permission
             return;
         }
 
-        $this->import('BackendUser', 'User');
-        $user = BackendUser::getInstance();
+        $user = \Contao\BackendUser::getInstance();
 
         if ($user->isAdmin) {
             return;
@@ -72,14 +70,14 @@ class Callback extends Permission
                     && $this->addNewRecordPermissions(Input::get('id'), 'tl_iso_tax_class', 'iso_tax_classes', 'iso_tax_classp')
                 ) {
                     $root[] = Input::get('id');
-                    $this->User->iso_tax_classes = $root;
+                    $user->iso_tax_classes = $root;
                 }
             // No break;
 
             case 'copy':
             case 'delete':
             case 'show':
-                if (!\in_array(Input::get('id'), $root) || ('delete' === Input::get('act') && !$this->User->hasAccess('delete', 'iso_tax_classp'))) {
+                if (!\in_array(Input::get('id'), $root) || ('delete' === Input::get('act') && !$user->hasAccess('delete', 'iso_tax_classp'))) {
                     throw new AccessDeniedException('Not enough permissions to ' . Input::get('act') . ' tax class ID "' . Input::get('id') . '"');
                 }
                 break;
@@ -87,13 +85,13 @@ class Callback extends Permission
             case 'editAll':
             case 'deleteAll':
             case 'overrideAll':
-                $session = Session::getInstance()->getData();
+                $session = \Contao\System::getContainer()->get('request_stack')->getSession()->all();
                 if ('deleteAll' === Input::get('act') && !$user->hasAccess('delete', 'iso_tax_classp')) {
                     $session['CURRENT']['IDS'] = array();
                 } else {
                     $session['CURRENT']['IDS'] = array_intersect($session['CURRENT']['IDS'], $root);
                 }
-                Session::getInstance()->setData($session);
+                \Contao\System::getContainer()->get('request_stack')->getSession()->replace($session);
                 break;
 
             default:

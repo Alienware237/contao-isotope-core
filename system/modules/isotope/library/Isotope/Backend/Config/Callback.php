@@ -17,8 +17,8 @@ use Contao\Database;
 use Contao\DataContainer;
 use Contao\Image;
 use Contao\Input;
-use Contao\Session;
 use Contao\StringUtil;
+use Contao\BackendUser;
 use Isotope\Automator;
 use Isotope\Backend\Permission;
 use Isotope\Model\Config;
@@ -42,24 +42,24 @@ class Callback extends Permission
             $GLOBALS['TL_DCA']['tl_iso_config']['fields']['fallback']['default'] = '1';
         }
 
-        $this->import('BackendUser', 'User');
+        $user = BackendUser::getInstance();
 
         // Return if user is admin
-        if ($this->User->isAdmin) {
+        if ($user->isAdmin) {
             return;
         }
 
         // Set root IDs
-        if (!\is_array($this->User->iso_configs) || \count($this->User->iso_configs) < 1) {
+        if (!\is_array($user->iso_configs) || \count($user->User->iso_configs) < 1) {
             $root = array(0);
         } else {
-            $root = $this->User->iso_configs;
+            $root = $user->iso_configs;
         }
 
         $GLOBALS['TL_DCA']['tl_iso_config']['list']['sorting']['root'] = $root;
 
         // Check permissions to add configs
-        if (!$this->User->hasAccess('create', 'iso_configp')) {
+        if (!$user->hasAccess('create', 'iso_configp')) {
             $GLOBALS['TL_DCA']['tl_iso_config']['config']['closed'] = true;
             unset($GLOBALS['TL_DCA']['tl_iso_config']['list']['global_operations']['new']);
         }
@@ -79,14 +79,14 @@ class Callback extends Permission
                     && $this->addNewRecordPermissions(Input::get('id'), 'tl_iso_config', 'iso_configs', 'iso_configp')
                 ) {
                     $root[] = Input::get('id');
-                    $this->User->iso_configs = $root;
+                    $user->iso_configs = $root;
                 }
                 // No break;
 
             case 'copy':
             case 'delete':
             case 'show':
-                if (!\in_array(Input::get('id'), $root) || ('delete' === Input::get('act') && !$this->User->hasAccess('delete', 'iso_configp'))) {
+                if (!\in_array(Input::get('id'), $root) || ('delete' === Input::get('act') && !$user->hasAccess('delete', 'iso_configp'))) {
                     throw new AccessDeniedException('Not enough permissions to ' . Input::get('act') . ' store configuration ID "' . Input::get('id') . '"');
                 }
                 break;
@@ -94,13 +94,13 @@ class Callback extends Permission
             case 'editAll':
             case 'deleteAll':
             case 'overrideAll':
-                $session = Session::getInstance()->getData();
-                if ('deleteAll' === Input::get('act') && !$this->User->hasAccess('delete', 'iso_configp')) {
+                $session = \Contao\System::getContainer()->get('request_stack')->getSession()->all();
+                if ('deleteAll' === Input::get('act') && !$user->hasAccess('delete', 'iso_configp')) {
                     $session['CURRENT']['IDS'] = array();
                 } else {
                     $session['CURRENT']['IDS'] = array_intersect($session['CURRENT']['IDS'], $root);
                 }
-                Session::getInstance()->setData($session);
+                \Contao\System::getContainer()->get('request_stack')->getSession()->replace($session);
                 break;
 
             default:
@@ -190,7 +190,10 @@ class Callback extends Permission
 
         $style = 'background-image:url(\'system/modules/isotope/assets/images/' . $image . '.png\');line-height:16px';
 
-        return sprintf('<div class="list_icon" style="%s" title="%s">%s</div>', $style, $GLOBALS['TL_LANG']['CUR'][$row['currency']], $label);
+        // Get the localized currency name or fallback to the currency code/empty string
+        $currencyLabel = $GLOBALS['TL_LANG']['CUR'][$row['currency']] ?? $row['currency'] ?? '';
+
+        return sprintf('<div class="list_icon" style="%s" title="%s">%s</div>', $style, $currencyLabel, $label);
     }
 
     /**
@@ -207,7 +210,8 @@ class Callback extends Permission
      */
     public function copyConfig($row, $href, $label, $title, $icon, $attributes)
     {
-        return ($this->User->isAdmin || $this->User->hasAccess('create', 'iso_configp')) ? '<a href="' . Backend::addToUrl($href . '&amp;id=' . $row['id']) . '" title="' . StringUtil::specialchars($title) . '"' . $attributes . '>' . Image::getHtml($icon, $label) . '</a> ' : Image::getHtml(preg_replace('/\.svg$/i', '_.svg', $icon)) . ' ';
+        $user = BackendUser::getInstance();
+        return ($user->isAdmin || $user->hasAccess('create', 'iso_configp')) ? '<a href="' . Backend::addToUrl($href . '&amp;id=' . $row['id']) . '" title="' . StringUtil::specialchars($title) . '"' . $attributes . '>' . Image::getHtml($icon, $label) . '</a> ' : Image::getHtml(preg_replace('/\.svg$/i', '_.svg', $icon)) . ' ';
     }
 
     /**
@@ -224,7 +228,8 @@ class Callback extends Permission
      */
     public function deleteConfig($row, $href, $label, $title, $icon, $attributes)
     {
-        return ($this->User->isAdmin || $this->User->hasAccess('delete', 'iso_configp')) ? '<a href="' . Backend::addToUrl($href . '&amp;id=' . $row['id']) . '" title="' . StringUtil::specialchars($title) . '"' . $attributes . '>' . Image::getHtml($icon, $label) . '</a> ' : Image::getHtml(preg_replace('/\.svg$/i', '_.svg', $icon)) . ' ';
+        $user = BackendUser::getInstance();
+        return ($user->isAdmin || $user->hasAccess('delete', 'iso_configp')) ? '<a href="' . Backend::addToUrl($href . '&amp;id=' . $row['id']) . '" title="' . StringUtil::specialchars($title) . '"' . $attributes . '>' . Image::getHtml($icon, $label) . '</a> ' : Image::getHtml(preg_replace('/\.svg$/i', '_.svg', $icon)) . ' ';
     }
 
     /**
@@ -285,8 +290,8 @@ class Callback extends Permission
     {
         $return = array();
 
-        foreach (\Contao\Folder::scan(TL_ROOT . '/' . $path) as $file) {
-            if (is_dir(TL_ROOT . '/' . $path . '/' . $file)) {
+        foreach (\Contao\Folder::scan(\Contao\System::getContainer()->getParameter('kernel.project_dir') . '/' . $path) as $file) {
+            if (is_dir(\Contao\System::getContainer()->getParameter('kernel.project_dir') . '/' . $path . '/' . $file)) {
                 $return[$path . '/' . $file] = str_repeat(' &nbsp; &nbsp; ', $level) . $file;
                 $return                      = array_merge($return, $this->doGetTemplateFolders($path . '/' . $file, $level + 1));
             }

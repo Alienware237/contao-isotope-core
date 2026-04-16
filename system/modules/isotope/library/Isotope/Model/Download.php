@@ -53,7 +53,7 @@ class Download extends Model
             return $arrFiles;
         }
 
-        if (is_file(TL_ROOT . '/' . $objFile->path)) {
+        if (is_file(\Contao\System::getContainer()->getParameter('kernel.project_dir') . '/' . $objFile->path)) {
             return array($objFile);
         }
 

@@ -38,7 +38,7 @@ class Template extends FrontendTemplate
         }
 
         $strKey      = $strTemplate . '.' . $strFormat;
-        $strPath     = TL_ROOT . '/templates';
+        $strPath     = \Contao\System::getContainer()->getParameter('kernel.project_dir') . '/templates';
         $strTemplate = basename($strTemplate);
 
         // Check the templates subfolder

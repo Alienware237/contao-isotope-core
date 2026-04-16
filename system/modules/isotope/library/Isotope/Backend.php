@@ -20,7 +20,6 @@ use Contao\Database;
 use Contao\DataContainer;
 use Contao\Input;
 use Contao\Model;
-use Contao\Session;
 use Contao\System;
 use Contao\Widget;
 use Isotope\Backend\Product\Permission;
@@ -175,7 +174,7 @@ class Backend extends ContaoBackend
         if (null !== $objConfig) {
             while ($objConfig->next()) {
                 if ($objConfig->templateGroup != '') {
-                    $arrConfigTemplates = glob(TL_ROOT . '/' . $objConfig->templateGroup . '/' . $strPrefix . '*');
+                    $arrConfigTemplates = glob(\Contao\System::getContainer()->getParameter('kernel.project_dir') . '/' . $objConfig->templateGroup . '/' . $strPrefix . '*');
 
                     if (\is_array($arrConfigTemplates)) {
                         foreach ($arrConfigTemplates as $strFile) {
@@ -281,33 +280,33 @@ class Backend extends ContaoBackend
         switch ($action) {
             // Move the product
             case 'moveProduct':
-                Session::getInstance()->set('iso_products_gid', (int) Input::post('value'));
+                System::getContainer()->get('request_stack')->getSession()->set('iso_products_gid', (int) Input::post('value'));
                 throw new NoContentResponseException();
 
             // Move multiple products
             case 'moveProducts':
-                Session::getInstance()->set('iso_products_gid', (int) Input::post('value'));
+                System::getContainer()->get('request_stack')->getSession()->set('iso_products_gid', (int) Input::post('value'));
                 throw new NoContentResponseException();
 
             // Filter the groups
             case 'filterGroups':
-                Session::getInstance()->set('iso_products_gid', (int) Input::post('value'));
+                System::getContainer()->get('request_stack')->getSession()->set('iso_products_gid', (int) Input::post('value'));
                 Controller::reload();
                 break;
 
             // Filter the pages
             case 'filterPages':
-                $filter = Session::getInstance()->get('filter');
+                $filter = System::getContainer()->get('request_stack')->getSession()->get('filter');
                 $filter['tl_iso_product']['iso_page'] = (int) Input::post('value');
-                Session::getInstance()->set('filter', $filter);
+                System::getContainer()->get('request_stack')->getSession()->set('filter', $filter);
                 Controller::reload();
                 break;
 
             // Filter product collection by product
             case 'filterProducts':
-                $filter = Session::getInstance()->get('filter');
+                $filter = System::getContainer()->get('request_stack')->getSession()->get('filter');
                 $filter['tl_iso_product_collection']['iso_product'] = (int) Input::post('value');
-                Session::getInstance()->set('filter', $filter);
+                System::getContainer()->get('request_stack')->getSession()->set('filter', $filter);
                 Controller::reload();
                 break;
         }
@@ -408,7 +407,7 @@ class Backend extends ContaoBackend
         }
 
         if (
-            TL_SCRIPT !== 'contao/help.php' ||
+            System::getContainer()->get('request_stack')->getCurrentRequest()->get('_route') !== 'contao/help.php' ||
             !isset($GLOBALS['TL_DCA'][$strTable]['fields'][$strField]) ||
             !is_subclass_of(Model::getClassFromTable($strKey), TypeAgent::class)
         ) {
@@ -462,7 +461,8 @@ class Backend extends ContaoBackend
             && Group::getTable() === Input::get('table')
             && 'be_main' === $objTemplate->getName()
         ) {
-            $objTemplate->managerHref = \Contao\StringUtil::ampersand($this->Session->get('groupPickerRef'));
+            $session = System::getContainer()->get('request_stack')->getSession();
+            $objTemplate->managerHref = \Contao\StringUtil::ampersand($session->get('groupPickerRef'));
             $objTemplate->manager     = $GLOBALS['TL_LANG']['MSC']['groupPickerHome'];
         }
     }

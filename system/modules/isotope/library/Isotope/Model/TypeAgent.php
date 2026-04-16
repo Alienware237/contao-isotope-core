@@ -248,7 +248,28 @@ abstract class TypeAgent extends Model
         }
 
         $objStatement = static::preFind($objStatement);
-        $objResult    = $objStatement->execute($arrOptions['value'] ?? null);
+        /** * FIX: Ensure $arrOptions['value'] is an array and matches the tokens.
+         * In Contao 5 / Doctrine, passing null to execute() when parameters
+         * are expected (or vice versa) triggers a PDOException.
+         */
+        $params = $arrOptions['value'] ?? [];
+
+        if (!\is_array($params)) {
+            $params = [$params];
+        }
+
+        if (!is_array($params)) {
+            // If it's a single value but not null, wrap it in an array.
+            // If it's null, use an empty array for a clean call.
+            $params = ($params !== null) ? [$params] : [];
+        }
+
+// Clean up: removes potential null values that could cause parameter mismatches
+        $params = array_values(array_filter($params, static function($v) {
+            return $v !== null;
+        }));
+
+        $objResult = $objStatement->execute(...$params);
 
         if ($objResult->numRows < 1) {
             return 'Array' === $arrOptions['return'] ? array() : null;

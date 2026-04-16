@@ -15,6 +15,7 @@ use Contao\ContentMedia;
 use Contao\ContentModel;
 use Contao\FilesModel;
 use Contao\StringUtil;
+use Contao\Config;
 use Isotope\Interfaces\IsotopeProduct;
 use Isotope\Model\Attribute;
 
@@ -68,7 +69,7 @@ class Media extends Attribute
 
         // Find poster
         while ($objFiles->next()) {
-            if (\in_array($objFiles->extension, StringUtil::trimsplit(',', $GLOBALS['TL_CONFIG']['validImageTypes']))) {
+            if (\in_array($objFiles->extension, StringUtil::trimsplit(',', Config::get('validImageTypes')))) {
                 $strPoster = $objFiles->uuid;
                 $arrFiles = array_diff($arrFiles, array($objFiles->uuid));
             }

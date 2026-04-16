@@ -85,7 +85,7 @@ class FineUploader extends Attribute implements \uploadable
 
         foreach ($value as $file) {
             /** @var ProductCollectionItem $item */
-            if (($item = $options['item']) instanceof ProductCollectionItem && !is_file(TL_ROOT . '/' . $file)) {
+            if (($item = $options['item']) instanceof ProductCollectionItem && !is_file(\Contao\System::getContainer()->getParameter('kernel.project_dir') . '/' . $file)) {
                 $item->addError($GLOBALS['TL_LANG']['ERR']['uploadNotFound']);
             }
 
@@ -111,7 +111,7 @@ class FineUploader extends Attribute implements \uploadable
             $folder = new Folder('isotope/uploads');
             $folder->protect();
 
-            $file = substr(md5_file(TL_ROOT . '/' . $temp), 0, 8) . '-' . $file;
+            $file = substr(md5_file(\Contao\System::getContainer()->getParameter('kernel.project_dir') . '/' . $temp), 0, 8) . '-' . $file;
             $file = FileUpload::getFileName($file, $folder->path);
             $file = $folder->path . '/' . $file;
 

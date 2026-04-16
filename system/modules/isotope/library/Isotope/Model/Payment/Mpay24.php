@@ -139,7 +139,7 @@ class Mpay24 extends Postsale
             $this->logging
         );
 
-        $config->setLogPath(TL_ROOT . '/system/logs');
+        $config->setLogPath(\Contao\System::getContainer()->getParameter('kernel.project_dir') . '/system/logs');
         $config->setLogFile('isotope_mpay24.log');
 
         return new \Mpay24\Mpay24($config);

@@ -71,7 +71,7 @@ class Upload extends Attribute implements \uploadable
         }
 
         /** @var ProductCollectionItem $item */
-        if (($item = $options['item']) instanceof ProductCollectionItem && !is_file(TL_ROOT . '/' . $value)) {
+        if (($item = $options['item']) instanceof ProductCollectionItem && !is_file(\Contao\System::getContainer()->getParameter('kernel.project_dir') . '/' . $value)) {
             $item->addError('File does not exist.'); // TODO add real error message
         }
 

@@ -543,8 +543,8 @@ class Order extends ProductCollection implements IsotopePurchasableCollection
             if ($objNotification->iso_document > 0
                 && (($objDocument = Document::findByPk($objNotification->iso_document)) !== null)
             ) {
-                $strFilePath           = $objDocument->outputToFile($this, TL_ROOT . '/system/tmp');
-                $arrTokens['document'] = str_replace(TL_ROOT . '/', '', $strFilePath);
+                $strFilePath           = $objDocument->outputToFile($this, \Contao\System::getContainer()->getParameter('kernel.project_dir') . '/system/tmp');
+                $arrTokens['document'] = str_replace(\Contao\System::getContainer()->getParameter('kernel.project_dir') . '/', '', $strFilePath);
             }
         }
 

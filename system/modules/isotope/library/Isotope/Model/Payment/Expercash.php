@@ -125,7 +125,7 @@ class Expercash extends Payment implements IsotopePostsale
             $strUrl .= $k . '=' . urlencode($v) . '&amp;';
         }
 
-        if (is_file(TL_ROOT . '/' . $this->expercash_css)) {
+        if (is_file(\Contao\System::getContainer()->getParameter('kernel.project_dir') . '/' . $this->expercash_css)) {
             $strUrl .= 'cssUrl=' . urlencode(Environment::get('base') . $this->expercash_css) . '&amp;';
         }
 

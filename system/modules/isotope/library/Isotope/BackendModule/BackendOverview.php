@@ -20,7 +20,6 @@ use Contao\CoreBundle\Exception\AccessDeniedException;
 use Contao\CoreBundle\Exception\ResponseException;
 use Contao\Environment;
 use Contao\Input;
-use Contao\Session;
 use Contao\System;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -63,7 +62,7 @@ abstract class BackendOverview extends BackendModule
         $this->arrModules = array();
 
         // enable collapsing legends
-        $session = Session::getInstance()->get('fieldset_states');
+        $session = System::getContainer()->get('request_stack')->getSession()->get('fieldset_states');
         foreach ($this->getModules() as $k => $arrGroup) {
             $hide = null;
             if (strpos($k, ':') !== false) {
@@ -134,17 +133,38 @@ abstract class BackendOverview extends BackendModule
 
         // Redirect the user to the specified page
         if (!empty($arrModule['redirect'])) {
-            Controller::redirect($arrModule['redirect']);
+            $strRedirect = $arrModule['redirect'];
+
+            // Contao 5 Fix: Remove legacy main.php from internal links
+            if (strpos($strRedirect, 'contao/main.php') !== false) {
+                $strRedirect = str_replace('contao/main.php', 'contao', $strRedirect);
+            }
+
+            Controller::redirect($strRedirect);
         }
 
         /** @var \Symfony\Component\HttpFoundation\Session\Session $objSession */
-        $objSession = System::getContainer()->get('session');
+        $objSession = System::getContainer()->get('request_stack')->getSession();
         $objSession->set('CURRENT_ID', Input::get('id'));
 
         $strTable = Input::get('table');
 
+        // Check if table is empty and no callback is defined
         if (empty($strTable) && empty($arrModule['callback'])) {
-            Controller::redirect(Backend::addToUrl('table='.$arrModule['tables'][0]));
+
+            // Ensure the 'tables' key exists and is not empty before accessing index 0
+            if (!empty($arrModule['tables']) && is_array($arrModule['tables'])) {
+                Controller::redirect(Backend::addToUrl('table=' . $arrModule['tables'][0]));
+            } else {
+                // Fallback: If no tables are defined, we cannot redirect to a specific table.
+                // You might want to log this as a configuration error.
+                System::getContainer()
+                    ->get('monolog.logger.contao')
+                    ->error('Module "' . $module . '" has no tables defined in config.php.');
+
+                // Optionally redirect to the overview or show an error message
+                return '';
+            }
         }
 
         // Add the module style sheet
@@ -211,10 +231,20 @@ abstract class BackendOverview extends BackendModule
             return $response;
         }
 
+        if ($strTable && !$this->objDc) {
+            $strClass = $GLOBALS['TL_DCA'][$strTable]['config']['dataContainer'] ?? 'Table';
+            $strClass = 'Contao\DC_' . $strClass;
+
+            if (class_exists($strClass)) {
+                $this->objDc = new $strClass($strTable);
+            }
+        }
+
         $act = (string) Input::get('act');
 
         if ('' === $act || 'paste' === $act || 'select' === $act) {
-            $act = ($this->objDc instanceof \listable) ? 'showAll' : 'edit';
+            // Fallback check: Use method_exists if interface check fails in Contao 5
+            $act = ($this->objDc instanceof \listable || (is_object($this->objDc) && method_exists($this->objDc, 'showAll'))) ? 'showAll' : 'edit';
         }
 
         switch ($act) {
@@ -222,8 +252,11 @@ abstract class BackendOverview extends BackendModule
             case 'show':
             case 'showAll':
             case 'undo':
-                if (!$this->objDc instanceof \listable) {
-                    System::log('Data container ' . $strTable . ' is not listable', __METHOD__, TL_ERROR);
+                if (!($this->objDc instanceof \listable || (is_object($this->objDc) && method_exists($this->objDc, 'showAll')))) {
+                    System::getContainer()
+                        ->get('monolog.logger.contao')
+                        ->error('Data container ' . ($strTable ?: 'unknown') . ' is not listable (' . __METHOD__ . ')');
+
                     trigger_error('The current data container is not listable', E_USER_ERROR);
                 }
                 break;
@@ -235,9 +268,14 @@ abstract class BackendOverview extends BackendModule
             case 'copyAll':
             case 'move':
             case 'edit':
-                if (!$this->objDc instanceof \editable) {
-                    System::log('Data container ' . $strTable . ' is not editable', __METHOD__, TL_ERROR);
-                    trigger_error('The current data container is not editable', E_USER_ERROR);
+                if (!($this->objDc instanceof \editable || (is_object($this->objDc) && method_exists($this->objDc, 'edit')))) {
+                    System::getContainer()
+                        ->get('monolog.logger.contao')
+                        ->error('Data container ' . ($strTable ?: 'unknown') . ' is not editable (' . __METHOD__ . ')');
+
+                    if (!is_object($this->objDc) || !method_exists($this->objDc, 'edit')) {
+                        trigger_error('The current data container is not editable', E_USER_ERROR);
+                    }
                 }
                 break;
         }

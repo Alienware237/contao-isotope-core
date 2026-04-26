@@ -15,7 +15,7 @@ use Contao\Config;
 use Contao\Files;
 use Contao\Folder;
 use Contao\Widget;
-use Haste\Util\FileUpload;
+use Codefog\HasteBundle\Util\FileUpload;
 use Isotope\Interfaces\IsotopeProduct;
 use Isotope\Model\Attribute;
 use Isotope\Model\ProductCollectionItem;
@@ -23,7 +23,7 @@ use Isotope\Model\ProductCollectionItem;
 /**
  * Attribute to implement frontend uploads
  */
-class Upload extends Attribute implements \uploadable
+class Upload extends Attribute
 {
 
     /**

@@ -11,7 +11,7 @@
 
 namespace Isotope\Module;
 
-use Haste\Generator\RowClass;
+use Codefog\HasteBundle\Generator\RowClass;
 use Isotope\CompatibilityHelper;
 use Isotope\Isotope;
 use Isotope\Model\Shipping;

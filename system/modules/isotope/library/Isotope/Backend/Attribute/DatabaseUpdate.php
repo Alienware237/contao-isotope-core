@@ -95,7 +95,9 @@ class DatabaseUpdate extends DcaExtractor
         $objFile->write("<?php\n\n");
         $objFile->append(sprintf("\$this->arrMeta = %s;\n", var_export($this->getMeta(), true)));
         $objFile->append(sprintf("\$this->arrFields = %s;\n", var_export($this->getFields(), true)));
-        $objFile->append(sprintf("\$this->arrOrderFields = %s;\n", var_export($this->getOrderFields(), true)));
+
+        // getOrderFields() was removed in contao 5
+        //$objFile->append(sprintf("\$this->arrOrderFields = %s;\n", var_export($this->getOrderFields(), true)));
 
         if (method_exists($this, 'getUniqueFields')) {
             $objFile->append(sprintf("\$this->arrUniqueFields = %s;\n", var_export($this->getUniqueFields(), true)));

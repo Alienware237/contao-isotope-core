@@ -228,6 +228,11 @@ $GLOBALS['TL_DCA']['tl_iso_attribute'] = array
                     \Isotope\Interfaces\IsotopeAttributeWithOptions::SOURCE_ATTRIBUTE,
                 ];
 
+                // Check: Ensure activeRecord exists before accessing properties
+                if (!$dc->activeRecord) {
+                    return $arrOptions;
+                }
+
                 if (!$dc->activeRecord->variant_option && $dc->activeRecord->customer_defined) {
                     $arrOptions = [
                         \Isotope\Interfaces\IsotopeAttributeWithOptions::SOURCE_TABLE,

@@ -127,90 +127,7 @@ class DC_ProductData extends DC_Table
         }
     }
 
-    /**
-     * List all records of a particular table
-     *
-     * @return string
-     */
-    public function showAll()
-    {
-        $return = '';
-        $this->limit = '';
 
-        /** @var Session $objSession */
-        $objSession = $this->getSession();
-
-        $this->reviseTable();
-
-        // Add to clipboard
-        if (Input::get('act') == 'paste')
-        {
-            $arrClipboard = $objSession->get('CLIPBOARD');
-
-            $arrClipboard[$this->strTable] = array
-            (
-                'id' => Input::get('id'),
-                'childs' => Input::get('childs'),
-                'mode' => Input::get('mode')
-            );
-
-            $objSession->set('CLIPBOARD', $arrClipboard);
-
-            // Perform a redirect (Updated for Contao 5)
-            \Contao\Controller::redirect('contao/main.php?do=' . Input::get('do') . (Input::get('pid') ? '&id=' . Input::get('pid') : '') . '&rt=' . Input::get('rt') . '&ref=' . Input::get('ref'));
-        }
-
-        // Do not show the language records
-        $this->procedure[] = "language=''";
-
-        // Display products filtered by group
-        if (!$this->intId) {
-            if ($this->intGroupId > 0) {
-                $this->procedure[] = "gid IN(".implode(',', array_map('intval', Database::getInstance()->getChildRecords([$this->intGroupId], Group::getTable(), false, [$this->intGroupId]))).")";
-            } elseif (!BackendUser::getInstance()->isAdmin && !empty(BackendUser::getInstance()->iso_groups)) {
-                $this->procedure[] = 'gid IN('.implode(',', array_map('intval', Database::getInstance()->getChildRecords(BackendUser::getInstance()->iso_groups, Group::getTable(), false, BackendUser::getInstance()->iso_groups))).')';
-            }
-        }
-
-        // Custom filter
-        if (!empty($GLOBALS['TL_DCA'][$this->strTable]['list']['sorting']['filter']) && \is_array($GLOBALS['TL_DCA'][$this->strTable]['list']['sorting']['filter']))
-        {
-            foreach ($GLOBALS['TL_DCA'][$this->strTable]['list']['sorting']['filter'] as $filter)
-            {
-                if (\is_string($filter))
-                {
-                    $this->procedure[] = $filter;
-                }
-                else
-                {
-                    $this->procedure[] = $filter[0];
-                    $this->values[] = $filter[1];
-                }
-            }
-        }
-
-        // --- CONTAO 5 FIX FOR CURRENT_ID ---
-        // According to documentation, use $this->currentPid.
-        // Fallback to Input::get('id') if currentPid is not populated.
-        $currentId = $this->currentPid ?: Input::get('id');
-
-        $return .= $this->panel();
-
-        // Check if we are in a parent view context
-        if ($currentId && (Input::get('pid') === null || (Input::get('pid') != '' && (int) Input::get('pid') != 0))) {
-            $return .= $this->parentView();
-        } else {
-            $return .= $this->listView();
-        }
-        // -----------------------------------
-
-        // Store the current IDs
-        $session = $objSession->all();
-        $session['CURRENT']['IDS'] = $this->current;
-        $objSession->replace($session);
-
-        return $return;
-    }
 
     public function cut($blnDoNotRedirect = false)
     {
@@ -405,6 +322,7 @@ class DC_ProductData extends DC_Table
             throw new InternalServerErrorException('Table "' . $this->strTable . '" is not editable.');
         }
 
+
         if ($intId)
         {
             $this->intId = $intId;
@@ -428,6 +346,49 @@ class DC_ProductData extends DC_Table
         }
 
         $this->objActiveRecord = $objRow;
+
+        /* * FINAL PROFESSIONAL FIX FOR CONTAO 5 / ISOTOPE
+         * Force 'type' update and refresh active record state
+         */
+        $request = \Contao\System::getContainer()->get('request_stack')->getCurrentRequest();
+
+        if ($request && $request->isMethod('POST') && $request->request->get('FORM_SUBMIT') == $this->strTable) {
+            $submittedType = $request->request->get('type');
+
+            if ($submittedType !== null && $submittedType != $this->objActiveRecord->type) {
+
+                // 1. Convert Name to ID if necessary
+                if (!is_numeric($submittedType)) {
+                    $objType = $this->Database->prepare("SELECT id FROM tl_iso_producttype WHERE name=?")
+                        ->limit(1)
+                        ->execute($submittedType);
+
+                    if ($objType->numRows) {
+                        $submittedType = $objType->id;
+                    }
+                }
+
+                if (is_numeric($submittedType)) {
+                    // 2. IMMEDIATE DATABASE UPDATE
+                    // We save it now, because DC_ProductData has no field-autosave logic here
+                    $this->Database->prepare("UPDATE " . $this->strTable . " SET type=? WHERE id=?")
+                        ->execute($submittedType, $this->intId);
+
+                    // 3. REFRESH ACTIVE RECORD
+                    // This is the key: we MUST reload the row from the DB so all subsequent
+                    // logic (getPalette, row generation) uses the NEW type.
+                    $this->objActiveRecord = $this->Database->prepare("SELECT * FROM " . $this->strTable . " WHERE id=?")
+                        ->limit(1)
+                        ->execute($this->intId);
+
+                    $objRow = $this->objActiveRecord; // Sync back to the local variable used in rows
+
+                    // 4. SYNC INPUT
+                    \Contao\Input::setGet('type', $submittedType);
+                    \Contao\Input::setPost('type', $submittedType);
+                }
+            }
+        }
 
         $return = '';
         $this->values[] = $this->intId;
@@ -515,6 +476,18 @@ class DC_ProductData extends DC_Table
         $boxes = StringUtil::trimsplit(';', $this->strPalette);
         $legends = array();
 
+        // Build an array from boxes and rows
+        $this->strPalette = $this->getPalette();
+
+        // PROFESSIONAL FIX FOR CONTAO 5:
+        // If the palette is empty or only contains the type, but we are editing a record,
+        // we force a fallback to the default palette to prevent empty forms.
+        if (($this->strPalette == '' || $this->strPalette == '{general_legend},type') && $GLOBALS['TL_DCA'][$this->strTable]['palettes']['default'] != '') {
+            $this->strPalette = $GLOBALS['TL_DCA'][$this->strTable]['palettes']['default'];
+        }
+
+        $boxes = StringUtil::trimsplit(';', $this->strPalette);
+
         if (!empty($boxes))
         {
             foreach ($boxes as $k=>$v)
@@ -535,11 +508,14 @@ class DC_ProductData extends DC_Table
                         $legends[$k] = substr($vv, 1, -1);
                         unset($boxes[$k][$kk]);
                     }
-                    elseif (!\is_array($GLOBALS['TL_DCA'][$this->strTable]['fields'][$vv] ?? null) || ($GLOBALS['TL_DCA'][$this->strTable]['fields'][$vv]['exclude'] ?? null))
+                    // MODIFIED CHECK: Ensure fields exist and handle multilingual filtering more robustly
+                    elseif (!isset($GLOBALS['TL_DCA'][$this->strTable]['fields'][$vv]) || !is_array($GLOBALS['TL_DCA'][$this->strTable]['fields'][$vv]))
                     {
                         unset($boxes[$k][$kk]);
                     }
-                    elseif ($this->blnEditLanguage && !($GLOBALS['TL_DCA'][$this->strTable]['fields'][$vv]['attributes']['multilingual'] ?? null))
+                    // PROFESSIONAL FIX: Only apply the multilingual filter if we are actually editing a translation,
+                    // not just because the session might have a language flag.
+                    elseif ($this->blnEditLanguage && \Contao\Input::get('act') == 'edit' && !($GLOBALS['TL_DCA'][$this->strTable]['fields'][$vv]['attributes']['multilingual'] ?? null))
                     {
                         unset($boxes[$k][$kk]);
                     }
@@ -553,7 +529,7 @@ class DC_ProductData extends DC_Table
             }
 
             /** @var Session $objSessionBag */
-            $objSessionBag = $this->getSession()->getBag('contao');
+            $objSessionBag = System::getContainer()->get('request_stack')->getSession()->getBag('contao_backend');
 
             $class = 'tl_tbox';
             $fs = $objSessionBag->get('fieldset_states');
@@ -2314,7 +2290,7 @@ class DC_ProductData extends DC_Table
         }
 
         /** @var AttributeBagInterface $objSessionBag */
-        $objSessionBag = $this->getSession()->getBag('contao');
+        $objSessionBag = System::getContainer()->get('request_stack')->getSession()->getBag('contao_backend');
 
         $session = $objSessionBag->all();
         $sessionKey = Input::get('id') ? $this->strTable . '_' . $this->currentPid : $this->strTable;
@@ -2400,7 +2376,7 @@ class DC_ProductData extends DC_Table
         $searchFields = array();
 
         /** @var AttributeBagInterface $objSessionBag */
-        $objSessionBag = $this->getSession()->getBag('contao');
+        $objSessionBag = System::getContainer()->get('request_stack')->getSession()->getBag('contao_backend');
 
         $session = $objSessionBag->all();
         $sessionKey = Input::get('id') ? $this->strTable . '_' . $this->currentPid : $this->strTable;
@@ -2557,7 +2533,7 @@ class DC_ProductData extends DC_Table
     protected function limitMenu($blnOptional=false)
     {
         /** @var AttributeBagInterface $objSessionBag */
-        $objSessionBag = $this->getSession()->getBag('contao');
+        $objSessionBag = System::getContainer()->get('request_stack')->getSession()->getBag('contao_backend');
 
         $session = $objSessionBag->all();
         $filter = Input::get('id') ? $this->strTable . '_' . $this->currentPid : $this->strTable;
@@ -2715,7 +2691,7 @@ class DC_ProductData extends DC_Table
     protected function filterMenu($intFilterPanel)
     {
         /** @var AttributeBagInterface $objSessionBag */
-        $objSessionBag = $this->getSession()->getBag('contao');
+        $objSessionBag = System::getContainer()->get('request_stack')->getSession()->getBag('contao_backend');
 
         $fields = '';
         $sortingFields = array();
@@ -2928,9 +2904,6 @@ class DC_ProductData extends DC_Table
             $strWhere = (!empty($arrProcedure) ? ' WHERE ' . implode(' AND ', $arrProcedure) : '');
             $strQuery = "SELECT DISTINCT " . $what . " FROM " . $this->strTable . $strWhere;
 
-            // --- CONTAO 5 COMPATIBILITY LAYER ---
-            // We bypass the Doctrine token parser if no parameters are intended to be bound.
-            // This prevents "Invalid parameter number" errors on plain SQL strings.
             if (empty($arrValues) && strpos($strQuery, '?') === false)
             {
                 $objFields = $this->Database->query($strQuery);
@@ -3095,7 +3068,7 @@ class DC_ProductData extends DC_Table
     public function copyFallback()
     {
         /** @var AttributeBagInterface $objSessionBag */
-        $objSessionBag = $this->getSession()->getBag('contao');
+        $objSessionBag = System::getContainer()->get('request_stack')->getSession()->getBag('contao_backend');
 
         $session = $objSessionBag->all();
         $strLanguage = $session['language'][$this->strTable][$this->intId] ?? null;

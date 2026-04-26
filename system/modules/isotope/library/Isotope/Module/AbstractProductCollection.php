@@ -14,7 +14,7 @@ namespace Isotope\Module;
 use Contao\Controller;
 use Contao\Input;
 use Contao\StringUtil;
-use Haste\Util\Url;
+use Codefog\HasteBundle\Util\Url;
 use Isotope\Frontend\ProductCollectionAction\LegacyButtonAction;
 use Isotope\Frontend\ProductCollectionAction\ProductCollectionActionInterface;
 use Isotope\Interfaces\IsotopeProductCollection;

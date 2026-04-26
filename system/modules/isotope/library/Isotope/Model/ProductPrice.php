@@ -50,14 +50,30 @@ class ProductPrice extends Model implements IsotopePrice
      */
     public function __construct($objResult = null)
     {
+        $isValid = false;
+
+        if (is_array($objResult) && isset($objResult['id']) && $objResult['id'] > 0) {
+            $isValid = true;
+        } elseif ($objResult instanceof \Contao\Database\Result && $objResult->numRows > 0 && (int)$objResult->id > 0) {
+            $isValid = true;
+        }
+
+        if (!$isValid) {
+            return;
+        }
+
+
         parent::__construct($objResult);
 
-        $this->arrTiers = array_combine(
-            explode(',', $this->arrData['tier_keys']),
-            explode(',', $this->arrData['tier_values'])
-        );
+        $this->arrTiers = [];
 
-        ksort($this->arrTiers);
+        if (!empty($this->arrData['tier_keys']) && !empty($this->arrData['tier_values'])) {
+            $this->arrTiers = array_combine(
+                explode(',', (string)$this->arrData['tier_keys']),
+                explode(',', (string)$this->arrData['tier_values'])
+            );
+            ksort($this->arrTiers);
+        }
     }
 
     /**
@@ -301,26 +317,39 @@ class ProductPrice extends Model implements IsotopePrice
      *
      * @return ProductPrice|null
      */
-    public static function findPrimaryByProductId($intProduct, array $arrOptions = array())
+    public static function findPrimaryByProductId($intProduct, array $arrOptions = [])
     {
         $t = static::$strTable;
 
-        $arrOptions = array_merge(
-            array(
-                'column' => array(
-                    "$t.config_id=0",
-                    "$t.member_group=0",
-                    "$t.start=''",
-                    "$t.stop=''",
-                    "$t.pid=" . $intProduct
-                ),
-                'limit'  => 1,
-                'return' => 'Model'
-            ),
-            $arrOptions
-        );
+        // 1. Logic check: Ensure we have a valid ID to search for
+        if (!$intProduct) {
+            return null;
+        }
 
-        return static::find($arrOptions);
+        $arrColumns = [
+            "$t.config_id=?",
+            "$t.member_group=?",
+            "$t.start=?",
+            "$t.stop=?",
+            "$t.pid=?"
+        ];
+
+        $arrValues = [0, 0, '', '', $intProduct];
+
+        $arrDefaultOptions = [
+            'column' => $arrColumns,
+            'value'  => $arrValues,
+            'limit'  => 1,
+            'return' => 'Model'
+        ];
+
+
+        // Merge custom options if provided, but keep our logic as base.
+        //$arrOptions = array_merge($arrDefaultOptions, $arrOptions);
+
+        unset($arrOptions['column'], $arrOptions['value']);
+
+        return static::findOneBy($arrColumns, $arrValues, $arrOptions);
     }
 
     /**

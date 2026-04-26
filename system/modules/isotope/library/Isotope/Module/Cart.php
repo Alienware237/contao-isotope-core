@@ -13,7 +13,7 @@ namespace Isotope\Module;
 
 use Contao\StringUtil;
 use Contao\System;
-use Haste\Util\Url;
+use Codefog\HasteBundle\Util\Url;
 use Isotope\Frontend\ProductCollectionAction\ContinueShoppingAction;
 use Isotope\Frontend\ProductCollectionAction\GoToCartAction;
 use Isotope\Frontend\ProductCollectionAction\GoToCheckoutAction;

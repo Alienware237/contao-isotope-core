@@ -12,9 +12,37 @@
 use Contao\Config;
 use Contao\System;
 use Isotope\Model\ProductType;
+use Contao\DC_table;
 
 
 System::loadLanguageFile(ProductType::getTable());
+
+/**
+ * FIX FÜR DC_ProductData in Contao 5
+ * Wir erzwingen den Produkttyp im globalen Input, damit der DataContainer
+ * die richtige Palette aus dem DCA extrahiert.
+ */
+if (\Contao\Input::get('do') == 'iso_products' && \Contao\Input::get('act') == 'edit') {
+    $objProd = \Contao\Database::getInstance()
+        ->prepare("SELECT type FROM tl_iso_product WHERE id=?")
+        ->execute(\Contao\Input::get('id'));
+
+    if ($objProd->type) {
+        // DC_ProductData verlässt sich auf diese Parameter
+        if (!\Contao\Input::get('type')) {
+            \Contao\Input::setGet('type', $objProd->type);
+        }
+    }
+}
+
+// Test-Fix: DC_ProductData zur korrekten Typ-Erkennung zwingen
+if (\Contao\Input::get('act') == 'edit' && !\Contao\Input::get('type')) {
+    $objProd = \Contao\Database::getInstance()->prepare("SELECT type FROM tl_iso_product WHERE id=?")->execute(\Contao\Input::get('id'));
+    if ($objProd->type) {
+        // Wir simulieren den Type-Parameter für den Treiber
+        \Contao\Input::setGet('type', $objProd->type);
+    }
+}
 
 /**
  * Table tl_iso_product
@@ -26,7 +54,7 @@ $GLOBALS['TL_DCA']['tl_iso_product'] = array
     'config' => array
     (
         'label'                     => &$GLOBALS['TL_LANG']['MOD']['iso_products'][0],
-        'dataContainer'             => 'DC_ProductData',
+        'dataContainer'             => DC_ProductData::class,
         'enableVersioning'          => true,
         'switchToEdit'              => true,
         'ctable'                    => array(\Isotope\Model\Download::getTable(), \Isotope\Model\ProductCategory::getTable(), \Isotope\Model\ProductPrice::getTable(), \Isotope\Model\AttributeOption::getTable()),
@@ -36,6 +64,7 @@ $GLOBALS['TL_DCA']['tl_iso_product'] = array
             array('Isotope\Backend\Product\Permission', 'check'),
             array('Isotope\Backend\Product\Panel', 'applyAdvancedFilters'),
             array('Isotope\Backend\Product\XmlSitemap', 'generate'),
+            array('tl_iso_product_custom', 'forceSaveTypeOnLoad'),
         ),
         'oncreate_callback' => array
         (
@@ -284,7 +313,7 @@ $GLOBALS['TL_DCA']['tl_iso_product'] = array
             'inputType'             => 'select',
             'options_callback'      => array('Isotope\Backend\ProductType\Callback', 'getOptions'),
             'foreignKey'            => \Isotope\Model\ProductType::getTable().'.name',
-            'eval'                  => array('mandatory'=>true, 'submitOnChange'=>true, 'includeBlankOption'=>true, 'tl_class'=>'w50 wizard', 'helpwizard'=>true),
+            'eval'                  => array('mandatory'=>true, 'submitOnChange'=>true, 'includeBlankOption'=>true, 'tl_class'=>'w50 wizard', 'helpwizard'=>true, 'alwaysSave'=> true),
             'attributes'            => array('legend'=>'general_legend', 'fixed'=>true, 'inherit'=>true, 'systemColumn'=>true),
             'sql'                   => "int(10) unsigned NOT NULL default '0'",
             'relation'              => array('type'=>'hasOne', 'load'=>'lazy'),
@@ -605,6 +634,13 @@ $GLOBALS['TL_DCA']['tl_iso_product'] = array
 );
 
 
+if (\Contao\Input::get('do') == 'iso_products' && \Contao\Input::get('act') == 'edit') {
+    foreach ($GLOBALS['TL_DCA']['tl_iso_product']['fields'] as $name => &$conf) {
+        // Skalierbare Lösung: Falls ein Feld in der Palette ist, muss es editierbar sein
+        $conf['exclude'] = false;
+    }
+}
+
 /**
  * Adjust the data configuration array in variants view
  */
@@ -617,4 +653,47 @@ if (\Contao\Input::get('id')) {
     );
 } else {
     unset($GLOBALS['TL_DCA']['tl_iso_product']['list']['global_operations']['generate']);
+}
+
+
+class tl_iso_product_custom {
+
+    public function forceSaveTypeOnLoad(\Contao\DataContainer $dc) {
+        $request = \Contao\System::getContainer()->get('request_stack')->getCurrentRequest();
+
+        // Nur ausführen, wenn das Formular abgeschickt wurde (submitOnChange)
+        if (!$request || $request->request->get('FORM_SUBMIT') !== 'tl_iso_product') {
+            return;
+        }
+
+        $submittedType = $request->request->get('type');
+        $productId = $dc->id ?: \Contao\Input::get('id');
+
+        if ($submittedType !== null && $productId) {
+
+            // 1. Falls der Name statt der ID kommt (dein SQL-Fehler von vorhin)
+            if (!is_numeric($submittedType) && $submittedType !== '') {
+                $objType = \Contao\Database::getInstance()
+                    ->prepare("SELECT id FROM tl_iso_producttype WHERE name=?")
+                    ->limit(1)
+                    ->execute($submittedType);
+
+                if ($objType->numRows) {
+                    $submittedType = $objType->id;
+                }
+            }
+
+            // 2. Wert direkt in der Datenbank fixieren
+            if (is_numeric($submittedType)) {
+                \Contao\Database::getInstance()
+                    ->prepare("UPDATE tl_iso_product SET type=? WHERE id=?")
+                    ->execute($submittedType, $productId);
+
+                // 3. WICHTIG: Den Wert global für Isotope überschreiben
+                // Damit Isotope im aktuellen Prozess die richtige Palette lädt
+                \Contao\Input::setPost('type', $submittedType);
+                \Contao\Input::setGet('type', $submittedType);
+            }
+        }
+    }
 }

@@ -11,7 +11,7 @@
 
 namespace Isotope\Model\Attribute;
 
-use Haste\Units\Mass\WeightAggregate;
+use Codefog\HasteBundle\Units\Mass\WeightAggregate;
 use Isotope\Interfaces\IsotopeProduct;
 use Isotope\Isotope;
 use Isotope\Model\Attribute;

@@ -26,7 +26,7 @@ use Contao\Message;
 use Contao\StringUtil;
 use Contao\System;
 use Contao\Widget;
-use Haste\Util\Debug;
+use Codefog\HasteBundle\Util\Debug;
 use Isotope\Model\Gallery;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
@@ -34,7 +34,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 /**
  * Provide methods to handle media files.
  */
-class MediaManager extends Widget implements \uploadable
+class MediaManager extends Widget
 {
 
     /**

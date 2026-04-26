@@ -13,7 +13,7 @@ namespace Isotope\Module;
 
 use Contao\Controller;
 use Contao\Input;
-use Haste\Util\Url;
+use Codefog\HasteBundle\Util\Url;
 use Isotope\Frontend\ProductCollectionAction\AddToCartAction;
 use Isotope\Interfaces\IsotopeProductCollection;
 use Isotope\Isotope;

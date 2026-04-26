@@ -20,7 +20,7 @@ use Contao\Environment;
 use Contao\Input;
 use Contao\StringUtil;
 use Contao\System;
-use Haste\Util\Format;
+use Codefog\HasteBundle\Util\Format;
 use Isotope\Backend\Group\Breadcrumb;
 use Isotope\Interfaces\IsotopeAttribute;
 use Isotope\Interfaces\IsotopeAttributeWithOptions;
@@ -46,7 +46,11 @@ class DcaManager extends Backend
             return;
         }
 
-        $this->addAttributes();
+        // Falls attributes noch leer ist, erzwinge das Laden
+        if (empty($this->attributes)) {
+            $this->addAttributes();
+        }
+
     }
 
     /**
@@ -255,7 +259,9 @@ class DcaManager extends Backend
     }
 
     /**
-     * Build palette for the current product type/variant
+     * Build palette for the current product type/variant.
+     *
+     * @return void
      */
     public function buildPaletteString()
     {
@@ -265,112 +271,109 @@ class DcaManager extends Backend
             return;
         }
 
-        $arrTypes      = array();
         $arrFields     = &$GLOBALS['TL_DCA']['tl_iso_product']['fields'];
-        /** @var IsotopeAttribute[] $arrAttributes */
         $arrAttributes = &$GLOBALS['TL_DCA']['tl_iso_product']['attributes'];
 
         $blnVariants     = false;
         $act             = Input::get('act');
         $blnSingleRecord = $act === 'edit' || $act === 'show';
+        $id              = Input::get('id');
+        $arrTypes        = array();
+        $currentType     = null;
 
-        if (Input::get('id') > 0) {
-
+        if ($id > 0) {
             /** @var object $objProduct */
-            $objProduct = Database::getInstance()->prepare("SELECT p1.pid, p1.type, p2.type AS parent_type FROM tl_iso_product p1 LEFT JOIN tl_iso_product p2 ON p1.pid=p2.id WHERE p1.id=?")->execute(Input::get('id'));
+            $objProduct = Database::getInstance()
+                ->prepare("SELECT p1.pid, p1.type, p2.type AS parent_type FROM tl_iso_product p1 LEFT JOIN tl_iso_product p2 ON p1.pid=p2.id WHERE p1.id=?")
+                ->execute($id);
 
             if ($objProduct->numRows) {
-                $objType  = ProductType::findByPk(($objProduct->pid > 0 ? $objProduct->parent_type : $objProduct->type));
-                $arrTypes = null === $objType ? array() : array($objType);
+                $currentType = ($objProduct->pid > 0 ? $objProduct->parent_type : $objProduct->type);
+                $objType = ProductType::findByPk($currentType);
 
-                if ($objProduct->pid > 0 || ('edit' !== $act && 'copyFallback' !== $act && 'show' !== $act)) {
+                if (null !== $objType) {
+                    $arrTypes = array($objType);
+                }
+
+                if ($objProduct->pid > 0) {
                     $blnVariants = true;
                 }
             }
         } else {
-            $arrTypes = ProductType::findAllUsed() ? : array();
+            $arrTypes = ProductType::findAllUsed() ?: array();
         }
 
         /** @var ProductType $objType */
         foreach ($arrTypes as $objType) {
 
-            // Enable advanced prices
+            // Enable advanced prices logic
             if ($blnSingleRecord && $objType->hasAdvancedPrices()) {
-                $arrFields['prices']['exclude']    = $arrFields['price']['exclude'];
-                $arrFields['prices']['attributes'] = $arrFields['price']['attributes'];
-                $arrFields['price']                = $arrFields['prices'];
-            }
-
-            // Register callback to version/restore a price
-            else {
+                if (isset($arrFields['prices'])) {
+                    $arrFields['prices']['exclude']    = $arrFields['price']['exclude'] ?? false;
+                    $arrFields['prices']['attributes'] = $arrFields['price']['attributes'] ?? array();
+                    $arrFields['price']                = $arrFields['prices'];
+                }
+            } else {
                 $GLOBALS['TL_DCA']['tl_iso_product']['config']['onversion_callback']['iso_product_price'] = array('Isotope\Backend\Product\Price', 'createVersion');
                 $GLOBALS['TL_DCA']['tl_iso_product']['config']['onrestore_callback']['iso_product_price'] = array('Isotope\Backend\Product\Price', 'restoreVersion');
             }
 
-            $arrInherit = array();
-            $arrPalette = array();
-            $arrLegends = array();
+            $arrInherit     = array();
+            $arrPalette     = array();
+            $arrLegends     = array();
             $arrLegendOrder = array();
-            $arrCanInherit = array();
+            $arrCanInherit  = array();
 
             if ($blnVariants) {
                 $arrConfig     = $objType->variant_attributes;
                 $arrEnabled    = $objType->getVariantAttributes();
                 $arrCanInherit = $objType->getAttributes();
             } else {
-                $arrConfig  = $objType->attributes;
-                $arrEnabled = $objType->getAttributes();
+                $arrConfig     = $objType->attributes;
+                $arrEnabled    = $objType->getAttributes();
             }
 
-            // Go through each enabled field and build palette
+            // Build palette
             foreach ($arrFields as $name => $arrField) {
-                if (\in_array($name, $arrEnabled)) {
+                if (in_array($name, $arrEnabled)) {
 
                     if (empty($arrField['inputType']) && empty($arrField['input_field_callback'])) {
                         continue;
                     }
 
-                    // Variant fields can only be edited in variant mode
-                    if (isset($arrAttributes[$name])
-                        && !$blnVariants
-                        && /* @todo in 3.0: $arrAttributes[$name] instanceof IsotopeAttributeForVariants
-                        && */$arrAttributes[$name]->isVariantOption()
-                    ) {
+                    if (isset($arrAttributes[$name]) && !$blnVariants && $arrAttributes[$name]->isVariantOption()) {
                         continue;
                     }
 
-                    // Field cannot be edited in variant
-                    if ($blnVariants && $arrAttributes[$name]->inherit) {
+                    if ($blnVariants && isset($arrAttributes[$name]) && $arrAttributes[$name]->inherit) {
                         continue;
                     }
 
-                    $arrLegendOrder[$arrConfig[$name]['position']] = $arrConfig[$name]['legend'];
-                    $arrPalette[$arrConfig[$name]['legend']][$arrConfig[$name]['position']] = $name;
+                    // IMPORTANT FOR CONTAO 5: Force visibility
+                    $arrFields[$name]['eval']['doNotShow'] = false;
 
-                    // Apply product type attribute config
-                    if ($arrConfig[$name]['tl_class'] != '') {
+                    $legend = $arrConfig[$name]['legend'] ?? 'general_legend';
+                    $position = $arrConfig[$name]['position'] ?? 0;
+
+                    $arrLegendOrder[$position] = $legend;
+                    $arrPalette[$legend][$position] = $name;
+
+                    if (!empty($arrConfig[$name]['tl_class'])) {
                         $arrFields[$name]['eval']['tl_class'] = $arrConfig[$name]['tl_class'];
                     }
 
-                    if ('yes' === $arrConfig[$name]['mandatory']) {
+                    if ('yes' === ($arrConfig[$name]['mandatory'] ?? '')) {
                         $arrFields[$name]['eval']['mandatory'] = true;
-                    } elseif ('no' === $arrConfig[$name]['mandatory']) {
+                    } elseif ('no' === ($arrConfig[$name]['mandatory'] ?? '')) {
                         $arrFields[$name]['eval']['mandatory'] = false;
                     }
 
-                    if ($blnVariants
-                        && \in_array($name, $arrCanInherit)
-                        && null !== $arrAttributes[$name]
-                        && /* @todo in 3.0: $arrAttributes[$name] instanceof IsotopeAttributeForVariants
-                        && */!$arrAttributes[$name]->isVariantOption()
-                        && !\in_array($name, ['price', 'published', 'start', 'stop'], true)
-                    ) {
-                        $arrInherit[$name] = Format::dcaLabel('tl_iso_product', $name);
+                    if ($blnVariants && in_array($name, $arrCanInherit) && !empty($arrAttributes[$name])) {
+                        if (!$arrAttributes[$name]->isVariantOption() && !in_array($name, ['price', 'published', 'start', 'stop'])) {
+                            $arrInherit[$name] = Format::dcaLabel('tl_iso_product', $name);
+                        }
                     }
-
                 } else {
-
-                    // Hide field from "show" option
                     if ((!isset($arrField['attributes']) || ($arrField['inputType'] ?? '') != '') && 'inherit' !== $name) {
                         $arrFields[$name]['eval']['doNotShow'] = true;
                     }
@@ -380,30 +383,31 @@ class DcaManager extends Backend
             ksort($arrLegendOrder);
             $arrLegendOrder = array_unique($arrLegendOrder);
 
-            // Build
             foreach ($arrLegendOrder as $legend) {
+                if (!isset($arrPalette[$legend])) continue;
                 $fields = $arrPalette[$legend];
                 ksort($fields);
                 $arrLegends[] = '{' . $legend . '},' . implode(',', $fields);
             }
 
-            // Set inherit options
             $arrFields['inherit']['options'] = $arrInherit;
+            $paletteString = ($blnVariants ? 'inherit,' : '') . implode(';', $arrLegends);
 
-            // Add palettes
-            $GLOBALS['TL_DCA']['tl_iso_product']['palettes'][($blnVariants ? 'default' : $objType->id)] = ($blnVariants ? 'inherit,' : '') . implode(';', $arrLegends);
-        }
+            // ROOT FIX: In Contao 5, the key must match the type value.
+            // If we are editing product ID 5 with type "1", Contao looks for palettes["1"].
+            $GLOBALS['TL_DCA']['tl_iso_product']['palettes'][$objType->id] = $paletteString;
 
-        // Remove non-active fields from multi-selection
-        if ($blnVariants && !$blnSingleRecord) {
-            $arrInclude = empty($arrPalette) ? array() : array_merge(...array_values($arrPalette));
-
-            foreach ($arrFields as $name => $config) {
-                if (($arrFields[$name]['attributes']['legend'] ?? '') != '' && !\in_array($name, $arrInclude)) {
-                    $arrFields[$name]['exclude'] = true;
-                }
+            // Also set it for the specific selector if act=edit
+            if ($blnSingleRecord && (string)$objType->id === (string)$currentType) {
+                $GLOBALS['TL_DCA']['tl_iso_product']['palettes']['default'] = $paletteString;
             }
         }
+
+        // Final Fallback if everything else fails
+        if ($blnSingleRecord && !isset($GLOBALS['TL_DCA']['tl_iso_product']['palettes']['default'])) {
+            $GLOBALS['TL_DCA']['tl_iso_product']['palettes']['default'] = '{general_legend},type,name,alias;{publish_legend},published';
+        }
+
     }
 
     /**

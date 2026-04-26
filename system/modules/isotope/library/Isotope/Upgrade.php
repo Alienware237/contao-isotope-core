@@ -13,7 +13,7 @@ namespace Isotope;
 
 use Contao\Controller;
 use Contao\Database;
-use Haste\Util\RepositoryVersion;
+use Codefog\HasteBundle\Util\RepositoryVersion;
 use Isotope\Model\Config;
 use Isotope\Model\ProductCache;
 use Isotope\Model\RequestCache;

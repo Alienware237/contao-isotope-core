@@ -15,7 +15,7 @@ use Contao\Input;
 use Contao\Module;
 use Contao\StringUtil;
 use Contao\System;
-use Haste\DateTime\DateTime;
+use Codefog\HasteBundle\DateTime\DateTime;
 use Isotope\Currency;
 use Isotope\Interfaces\IsotopeProductCollection;
 use Isotope\Interfaces\IsotopePurchasableCollection;

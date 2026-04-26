@@ -13,7 +13,7 @@ namespace Isotope\Module;
 
 use Contao\Database;
 use Contao\StringUtil;
-use Haste\Input\Input;
+use Codefog\HasteBundle\Input\Input;
 use Isotope\CompatibilityHelper;
 use Isotope\Interfaces\IsotopeProduct;
 use Isotope\Isotope;

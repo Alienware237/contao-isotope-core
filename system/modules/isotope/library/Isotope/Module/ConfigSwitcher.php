@@ -14,7 +14,7 @@ namespace Isotope\Module;
 use Contao\Controller;
 use Contao\Environment;
 use Contao\Input;
-use Haste\Generator\RowClass;
+use Codefog\HasteBundle\Generator\RowClass;
 use Isotope\CompatibilityHelper;
 use Isotope\Isotope;
 use Isotope\Model\Config;

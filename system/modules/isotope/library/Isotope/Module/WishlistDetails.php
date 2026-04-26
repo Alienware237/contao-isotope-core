@@ -15,7 +15,7 @@ use Contao\CoreBundle\Exception\AccessDeniedException;
 use Contao\FrontendUser;
 use Contao\Input;
 use Contao\PageModel;
-use Haste\Util\Url;
+use Codefog\HasteBundle\Util\Url;
 use Isotope\CompatibilityHelper;
 use Isotope\Frontend\ProductCollectionAction\ShareWishlistAction;
 use Isotope\Model\ProductCollection\Wishlist as WishlistCollection;

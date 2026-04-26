@@ -21,7 +21,7 @@ use Contao\Model\Collection;
 use Contao\PageModel;
 use Contao\StringUtil;
 use Contao\System;
-use Haste\Util\Url;
+use Codefog\HasteBundle\Util\Url;
 use Isotope\CompatibilityHelper;
 use Isotope\Interfaces\IsotopeProductCollection;
 use Isotope\Model\ProductCollection\Order;

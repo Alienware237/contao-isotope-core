@@ -13,8 +13,8 @@ namespace Isotope;
 
 use Contao\ModuleModel;
 use Contao\System;
-use Haste\Data\Collection;
-use Haste\Data\Plain;
+use Codefog\HasteBundle\Data\Collection;
+use Codefog\HasteBundle\Data\Plain;
 use Isotope\Module\Messages;
 
 class Message

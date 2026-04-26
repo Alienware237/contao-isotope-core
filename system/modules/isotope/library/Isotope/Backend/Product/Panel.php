@@ -157,7 +157,7 @@ class Panel extends Backend
             return '';
         }
 
-        $target = System::getContainer()->get('router')->generate('contao', [
+        $target = System::getContainer()->get('router')->generate('contao_backend', [
             'do' => 'iso_products',
             'table' => 'tl_iso_product_category',
             'id' => '_value_',

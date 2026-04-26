@@ -12,8 +12,8 @@
 namespace Isotope\Model\Payment;
 
 use Contao\Template;
-use Haste\Form\Form;
-use Haste\Util\StringUtil;
+use Codefog\HasteBundle\Form\Form;
+use Codefog\HasteBundle\Util\StringUtil;
 use Isotope\Interfaces\IsotopeOrderableCollection;
 use Isotope\Interfaces\IsotopeProductCollection;
 use Isotope\Isotope;

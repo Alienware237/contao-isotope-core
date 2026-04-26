@@ -16,7 +16,7 @@ use Contao\DataContainer;
 use Contao\Environment;
 use Contao\Image;
 use Contao\StringUtil;
-use Haste\Util\Format;
+use Codefog\HasteBundle\Util\Format;
 use Isotope\Model\Product;
 use Isotope\Model\ProductPrice;
 use Isotope\Model\ProductType;

@@ -46,7 +46,7 @@ class Wizard
      */
     protected function getCsrfToken()
     {
-        $container = System::getContainer();
+        $container = \Contao\System::getContainer();
         return $container->get('contao.csrf.token_manager')
             ->getToken($container->getParameter('contao.csrf_token_name'))
             ->getValue();

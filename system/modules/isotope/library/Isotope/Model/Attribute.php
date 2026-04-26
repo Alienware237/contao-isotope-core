@@ -16,7 +16,7 @@ use Contao\Database;
 use Contao\FilesModel;
 use Contao\Model;
 use Contao\StringUtil;
-use Haste\Util\Format;
+use Codefog\HasteBundle\Util\Format;
 use Isotope\Interfaces\IsotopeAttribute;
 use Isotope\Interfaces\IsotopeAttributeWithOptions;
 use Isotope\Interfaces\IsotopeProduct;

@@ -181,6 +181,7 @@ class Price extends Backend
         $strPrice = (string) $arrValue['value'];
         $intTax   = (int) $arrValue['unit'];
 
+
         $objPrice = Database::getInstance()->query("
             SELECT t.id, p.id AS pid, p.tax_class, t.price
             FROM tl_iso_product_price p

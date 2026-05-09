@@ -12,37 +12,8 @@
 use Contao\Config;
 use Contao\System;
 use Isotope\Model\ProductType;
-use Contao\DC_table;
-
 
 System::loadLanguageFile(ProductType::getTable());
-
-/**
- * FIX FÜR DC_ProductData in Contao 5
- * Wir erzwingen den Produkttyp im globalen Input, damit der DataContainer
- * die richtige Palette aus dem DCA extrahiert.
- */
-if (\Contao\Input::get('do') == 'iso_products' && \Contao\Input::get('act') == 'edit') {
-    $objProd = \Contao\Database::getInstance()
-        ->prepare("SELECT type FROM tl_iso_product WHERE id=?")
-        ->execute(\Contao\Input::get('id'));
-
-    if ($objProd->type) {
-        // DC_ProductData verlässt sich auf diese Parameter
-        if (!\Contao\Input::get('type')) {
-            \Contao\Input::setGet('type', $objProd->type);
-        }
-    }
-}
-
-// Test-Fix: DC_ProductData zur korrekten Typ-Erkennung zwingen
-if (\Contao\Input::get('act') == 'edit' && !\Contao\Input::get('type')) {
-    $objProd = \Contao\Database::getInstance()->prepare("SELECT type FROM tl_iso_product WHERE id=?")->execute(\Contao\Input::get('id'));
-    if ($objProd->type) {
-        // Wir simulieren den Type-Parameter für den Treiber
-        \Contao\Input::setGet('type', $objProd->type);
-    }
-}
 
 /**
  * Table tl_iso_product
@@ -64,7 +35,6 @@ $GLOBALS['TL_DCA']['tl_iso_product'] = array
             array('Isotope\Backend\Product\Permission', 'check'),
             array('Isotope\Backend\Product\Panel', 'applyAdvancedFilters'),
             array('Isotope\Backend\Product\XmlSitemap', 'generate'),
-            array('tl_iso_product_custom', 'forceSaveTypeOnLoad'),
         ),
         'oncreate_callback' => array
         (
@@ -315,6 +285,9 @@ $GLOBALS['TL_DCA']['tl_iso_product'] = array
             'foreignKey'            => \Isotope\Model\ProductType::getTable().'.name',
             'eval'                  => array('mandatory'=>true, 'submitOnChange'=>true, 'includeBlankOption'=>true, 'tl_class'=>'w50 wizard', 'helpwizard'=>true, 'alwaysSave'=> true),
             'attributes'            => array('legend'=>'general_legend', 'fixed'=>true, 'inherit'=>true, 'systemColumn'=>true),
+            'save_callback' => array(
+                array('Isotope\EventListener\Dca\ProductTypeCallback', '__invoke')
+            ),
             'sql'                   => "int(10) unsigned NOT NULL default '0'",
             'relation'              => array('type'=>'hasOne', 'load'=>'lazy'),
             'explanation'           => 'tl_iso_product.type',
@@ -381,10 +354,9 @@ $GLOBALS['TL_DCA']['tl_iso_product'] = array
         (
             'exclude'               => true,
             'search'                => true,
-            'sorting'               => true,
             'inputType'             => 'text',
-            'eval'                  => array('maxlength'=>14, 'unique'=>true, 'doNotCopy'=>true, 'tl_class'=>'w50'),
-            'attributes'            => array('legend'=>'general_legend', 'fe_search'=>true, 'singular'=>true),
+            'eval'                  => array('maxlength'=>14, 'tl_class'=>'w50'),
+            'attributes'            => array('legend'=>'general_legend', 'fixed'=>true),
             'sql'                   => "varchar(14) NOT NULL default ''",
         ),
         'sku' => array
@@ -393,8 +365,8 @@ $GLOBALS['TL_DCA']['tl_iso_product'] = array
             'search'                => true,
             'sorting'               => true,
             'inputType'             => 'text',
-            'eval'                  => array('mandatory'=>true, 'maxlength'=>128, 'unique'=>true, 'doNotCopy'=>true, 'tl_class'=>'w50'),
-            'attributes'            => array('legend'=>'general_legend', 'fe_sorting'=>true, 'fe_search'=>true, 'singular'=>true),
+            'eval'                  => array('mandatory'=>true, 'maxlength'=>128, 'tl_class'=>'w50'),
+            'attributes'            => array('legend'=>'general_legend', 'fixed'=>true, 'inherit'=>true),
             'sql'                   => "varchar(128) NOT NULL default ''",
         ),
         'name' => array
@@ -403,8 +375,8 @@ $GLOBALS['TL_DCA']['tl_iso_product'] = array
             'search'                => true,
             'sorting'               => true,
             'inputType'             => 'text',
-            'eval'                  => array('mandatory'=>true, 'tl_class'=>'clr long'),
-            'attributes'            => array('legend'=>'general_legend', 'multilingual'=>true, 'fixed'=>true, 'fe_sorting'=>true, 'fe_search'=>true),
+            'eval'                  => array('mandatory'=>true, 'maxlength'=>255, 'tl_class'=>'long clr'),
+            'attributes'            => array('legend'=>'general_legend', 'multilingual'=>true, 'fixed'=>true),
             'sql'                   => "varchar(255) NOT NULL default ''",
         ),
         'teaser' => array
@@ -412,8 +384,8 @@ $GLOBALS['TL_DCA']['tl_iso_product'] = array
             'exclude'               => true,
             'search'                => true,
             'inputType'             => 'textarea',
-            'eval'                  => array('style'=>'height:80px', 'tl_class'=>'clr'),
-            'attributes'            => array('legend'=>'general_legend', 'multilingual'=>true, 'fe_search'=>true),
+            'eval'                  => array('style'=>'height:60px', 'tl_class'=>'clr'),
+            'attributes'            => array('legend'=>'general_legend', 'multilingual'=>true),
             'sql'                   => "text NULL",
         ),
         'description' => array
@@ -430,9 +402,9 @@ $GLOBALS['TL_DCA']['tl_iso_product'] = array
             'exclude'               => true,
             'search'                => true,
             'inputType'             => 'text',
-            'eval'                  => array('maxlength'=>255, 'tl_class'=>'clr long'),
-            'attributes'            => array('legend'=>'meta_legend', 'multilingual'=>true, 'variant_excluded'=>true),
-            'sql'                   =>  "varchar(255) NOT NULL default ''",
+            'eval'                  => array('maxlength'=>255, 'tl_class'=>'long'),
+            'attributes'            => array('legend'=>'meta_legend', 'multilingual'=>true),
+            'sql'                   => "varchar(255) NOT NULL default ''",
         ),
         'meta_description' => array
         (
@@ -440,8 +412,8 @@ $GLOBALS['TL_DCA']['tl_iso_product'] = array
             'search'                => true,
             'inputType'             => 'textarea',
             'eval'                  => array('style'=>'height:60px', 'tl_class'=>'clr'),
-            'attributes'            => array('legend'=>'meta_legend', 'multilingual'=>true, 'variant_excluded'=>true),
-            'sql'                   =>  "text NULL",
+            'attributes'            => array('legend'=>'meta_legend', 'multilingual'=>true),
+            'sql'                   => "text NULL",
         ),
         'meta_keywords' => array
         (
@@ -508,9 +480,8 @@ $GLOBALS['TL_DCA']['tl_iso_product'] = array
         'baseprice' => array
         (
             'exclude'               => true,
-            'inputType'             => 'timePeriod',
-            'foreignKey'            => 'tl_iso_baseprice.name',
-            'eval'                  => array('includeBlankOption'=>true, 'rgxp'=>'digit', 'tl_class'=>'w50'),
+            'inputType'             => 'text',
+            'eval'                  => array('tl_class'=>'w50'),
             'attributes'            => array('type'=>'\Isotope\Model\Attribute\BasePrice', 'legend'=>'pricing_legend'),
             'sql'                   => "varchar(255) NOT NULL default ''",
         ),
@@ -634,13 +605,6 @@ $GLOBALS['TL_DCA']['tl_iso_product'] = array
 );
 
 
-if (\Contao\Input::get('do') == 'iso_products' && \Contao\Input::get('act') == 'edit') {
-    foreach ($GLOBALS['TL_DCA']['tl_iso_product']['fields'] as $name => &$conf) {
-        // Skalierbare Lösung: Falls ein Feld in der Palette ist, muss es editierbar sein
-        $conf['exclude'] = false;
-    }
-}
-
 /**
  * Adjust the data configuration array in variants view
  */
@@ -655,45 +619,82 @@ if (\Contao\Input::get('id')) {
     unset($GLOBALS['TL_DCA']['tl_iso_product']['list']['global_operations']['generate']);
 }
 
-
-class tl_iso_product_custom {
-
-    public function forceSaveTypeOnLoad(\Contao\DataContainer $dc) {
+class tl_iso_product_custom
+{
+    public function saveTypeBeforePaletteLoad(\Contao\DataContainer $dc)
+    {
         $request = \Contao\System::getContainer()->get('request_stack')->getCurrentRequest();
+        $logger = \Contao\System::getContainer()->get('monolog.logger.contao');
 
-        // Nur ausführen, wenn das Formular abgeschickt wurde (submitOnChange)
-        if (!$request || $request->request->get('FORM_SUBMIT') !== 'tl_iso_product') {
+        if (!$request) {
             return;
         }
 
+        $logger->info('ISOTOPE DEBUG');
+
+        // 1. Debug: Prüfen ob POST-Daten vorhanden sind
+        $allPostData = $request->request->all();
         $submittedType = $request->request->get('type');
+        $formSubmit = $request->request->get('FORM_SUBMIT');
+
+        if ($formSubmit === 'tl_iso_product') {
+            $logger->info('ISOTOPE DEBUG: Form submitted. Detected Type: ' . $submittedType);
+
+            // Logge alle POST-Daten, um zu sehen, was wirklich ankommt (Vorsicht: Lang!)
+            // $logger->info('ISOTOPE DEBUG: Full POST Data: ' . json_encode($allPostData));
+        }
+
         $productId = $dc->id ?: \Contao\Input::get('id');
 
         if ($submittedType !== null && $productId) {
 
-            // 1. Falls der Name statt der ID kommt (dein SQL-Fehler von vorhin)
+            // 2. Debug: Prüfen ob ID-Konvertierung nötig ist
             if (!is_numeric($submittedType) && $submittedType !== '') {
+                $logger->info('ISOTOPE DEBUG: Type is string ("'.$submittedType.'"), attempting lookup.');
+
                 $objType = \Contao\Database::getInstance()
                     ->prepare("SELECT id FROM tl_iso_producttype WHERE name=?")
                     ->limit(1)
                     ->execute($submittedType);
 
                 if ($objType->numRows) {
+                    $logger->info('ISOTOPE DEBUG: Found ID ' . $objType->id . ' for name ' . $submittedType);
                     $submittedType = $objType->id;
+                } else {
+                    $logger->error('ISOTOPE DEBUG: Could not find product type ID for name: ' . $submittedType);
                 }
             }
 
-            // 2. Wert direkt in der Datenbank fixieren
             if (is_numeric($submittedType)) {
-                \Contao\Database::getInstance()
+                $logger->info('ISOTOPE DEBUG: Executing UPDATE for Product ID ' . $productId . ' with Type ID ' . $submittedType);
+
+                $res = \Contao\Database::getInstance()
                     ->prepare("UPDATE tl_iso_product SET type=? WHERE id=?")
                     ->execute($submittedType, $productId);
 
-                // 3. WICHTIG: Den Wert global für Isotope überschreiben
-                // Damit Isotope im aktuellen Prozess die richtige Palette lädt
-                \Contao\Input::setPost('type', $submittedType);
-                \Contao\Input::setGet('type', $submittedType);
+                if ($res->affectedRows > 0) {
+                    $logger->info('ISOTOPE DEBUG: Database UPDATE successful.');
+                } else {
+                    $logger->warning('ISOTOPE DEBUG: Database UPDATE executed but 0 rows affected. (Value maybe unchanged?)');
+                }
             }
         }
+    }
+
+    public function updateProductTypeAndPalette($varValue, \Contao\DataContainer $dc) {
+        // $varValue enthält AUTOMATISCH den neuen Wert aus dem Formular.
+        // Contao hat ihn bereits aus dem POST/Request extrahiert.
+
+        \Contao\System::getContainer()->get('monolog.logger.contao')->info('Type changed to: ');
+
+        if ($varValue != $dc->activeRecord->type) {
+            // Optional: Logge es zur Sicherheit
+            \Contao\System::getContainer()->get('monolog.logger.contao')->info($varValue);
+
+            // Hier kannst du zusätzliche Logik ausführen.
+            // Der Return-Wert wird von Contao automatisch in die DB gespeichert.
+        }
+
+        return $varValue;
     }
 }

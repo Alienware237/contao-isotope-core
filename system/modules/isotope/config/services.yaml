@@ -1,4 +1,8 @@
 services:
+    _defaults:
+      autowire: true
+      autoconfigure: true
+
     Isotope\Controller\PostsaleController:
         arguments:
             - '@contao.framework'
@@ -41,3 +45,7 @@ services:
     isotope.fragment.registry:
         alias: contao.fragment.registry
         public: true
+
+
+    Isotope\EventListener\Dca\ProductTypeCallback:
+      public: true # Wichtig, damit Contao den Service findet

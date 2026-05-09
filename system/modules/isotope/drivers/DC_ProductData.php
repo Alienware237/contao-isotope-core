@@ -819,6 +819,65 @@ class DC_ProductData extends DC_Table
         // Reload the page to prevent _POST variables from being sent twice
         if (!$this->noReload && Input::post('FORM_SUBMIT') == $this->strTable)
         {
+
+            $arrUpdate = array('tstamp' => time());
+
+            // 1. Hole alle echten Spaltennamen der Tabelle aus der Datenbank
+            $arrColumns = $this->Database->getFieldNames($this->strTable);
+
+            // 2. Wir gehen durch die Felder der aktuellen Palette
+            $arrPaletteFields = preg_split('/[;,]+/', $this->strPalette);
+
+            foreach ($arrPaletteFields as $fieldName) {
+                // Entferne Leerzeichen und ignoriere Legenden/Subpaletten
+                $fieldName = trim($fieldName);
+                if ($fieldName == '' || strpos($fieldName, '{') === 0 || strpos($fieldName, '[') === 0) {
+                    continue;
+                }
+
+                // PRÜFUNG: Nur speichern, wenn das Feld auch eine echte Spalte in der DB ist!
+                if (!in_array($fieldName, $arrColumns)) {
+                    continue;
+                }
+
+                if (isset($_POST[$fieldName])) {
+                    $varValue = Input::post($fieldName);
+
+                    // Spezielle Handhabung für Isotope Preis-Struktur
+                    if ($fieldName === 'price') {
+                        if (!is_array($varValue)) {
+                            $varValue = serialize([
+                                'value' => (string)$varValue,
+                                'unit'  => (int)Input::post('price_unit') ?: 0
+                            ]);
+                        } else {
+                            $varValue = serialize($varValue);
+                        }
+                    }
+                    // Arrays serialisieren (Checkboxes, etc.)
+                    elseif (is_array($varValue)) {
+                        $varValue = serialize($varValue);
+                    }
+
+                    $arrUpdate[$fieldName] = $varValue;
+                }
+            }
+
+            // 3. Dynamisches Update-Statement nur mit validen Spalten ausführen
+            if (count($arrUpdate) > 1) { // Mehr als nur tstamp
+                $sets = [];
+                $values = [];
+                foreach ($arrUpdate as $col => $val) {
+                    $sets[] = "`$col`=?";
+                    $values[] = $val;
+                }
+                $values[] = $this->intId;
+
+                $this->Database->prepare("UPDATE " . $this->strTable . " SET " . implode(', ', $sets) . " WHERE id=?")
+                    ->execute(...$values);
+            }
+
+
             $arrValues = $this->values;
             array_unshift($arrValues, time());
 
@@ -1005,6 +1064,7 @@ class DC_ProductData extends DC_Table
 </script>';
         }
 
+        //echo "objVersions Ende";
         return $return;
     }
 

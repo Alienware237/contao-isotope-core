@@ -81,7 +81,7 @@ class SubtableVersion
             return;
         }
 
-        Database::getInstance()->prepare("UPDATE tl_version SET active='' WHERE pid=? AND fromTable=?")
+        Database::getInstance()->prepare("UPDATE tl_version SET active=0 WHERE pid=? AND fromTable=?")
                        ->execute($intId, $strSubtable);
 
         Database::getInstance()

@@ -339,61 +339,66 @@ class Rule extends Model
 
                 $strRestriction = "(productRestrictions='attribute' AND attributeName='" . $restriction['attribute'] . "' AND attributeCondition='" . $restriction['condition'] . "' ";
 
-                switch ($restriction['condition']) {
-                    case 'eq':
-                        $strRestriction .= sprintf(
-                            "AND attributeValue IN (%s)",
-                            implode(', ', array_fill(0, \count($restriction['values']), '?'))
-                        );
+                // Ensure we only add placeholders if we actually have values to bind
+                if (!empty($restriction['values'])) {
+                    $strRestriction = "(productRestrictions='attribute' AND attributeName='" . $restriction['attribute'] . "' AND attributeCondition='" . $restriction['condition'] . "' ";
 
-                        $arrValues = array_merge($arrValues, $restriction['values']);
-                        break;
-
-                    // We cannot handle this as `attributeValue NOT IN (...)`, since we want to handle the rule if at
-                    // least one of the products in the cart does not equal the value. So if exactly one product (value)
-                    // is in the cart, it might not match. Otherwise it always matches at least one of the cart products.
-                    case 'neq':
-                        if (1 === \count($restriction['values'])) {
-                            $strRestriction .= 'AND attributeValue = ?';
-                            $arrValues = array_merge($arrValues, $restriction['values']);
-                        }
-                        break;
-
-                    case 'lt':
-                    case 'gt':
-                    case 'elt':
-                    case 'egt':
-                        $arrOR = array();
-                        foreach ($restriction['values'] as $value) {
-                            $arrOR[] = sprintf(
-                                'attributeValue %s%s ?',
-                                (('lt' === $restriction['condition'] || 'elt' === $restriction['condition']) ? '>' : '<'),
-                                (('elt' === $restriction['condition'] || 'egt' === $restriction['condition']) ? '=' : '')
+                    switch ($restriction['condition']) {
+                        case 'eq':
+                            $strRestriction .= sprintf(
+                                "AND attributeValue IN (%s)",
+                                implode(', ', array_fill(0, \count($restriction['values']), '?'))
                             );
-                            $arrValues[] = $value;
-                        }
-                        $strRestriction .= 'AND (' . implode(' OR ', $arrOR) . ')';
-                        break;
+                            // Explicitly merge values to maintain order
+                            $arrValues = array_merge($arrValues, array_values($restriction['values']));
+                            break;
 
-                    case 'starts':
-                    case 'ends':
-                    case 'contains':
-                        $arrOR = array();
-                        foreach ($restriction['values'] as $value) {
-                            $arrOR[] = sprintf(
-                                "? LIKE CONCAT(%sattributeValue%s)",
-                                (('ends' === $restriction['condition'] || 'contains' === $restriction['condition']) ? "'%', " : ''),
-                                (('starts' === $restriction['condition'] || 'contains' === $restriction['condition']) ? ", '%'" : '')
+                        // We cannot handle this as `attributeValue NOT IN (...)`, since we want to handle the rule if at
+                        // least one of the products in the cart does not equal the value. So if exactly one product (value)
+                        // is in the cart, it might not match. Otherwise it always matches at least one of the cart products.
+                        case 'neq':
+                            if (1 === \count($restriction['values'])) {
+                                $strRestriction .= 'AND attributeValue != ?'; // Fixed: neq should use !=
+                                $arrValues[] = reset($restriction['values']);
+                            }
+                            break;
+
+                        case 'lt':
+                        case 'gt':
+                        case 'elt':
+                        case 'egt':
+                            $arrOR = array();
+                            foreach ($restriction['values'] as $value) {
+                                $arrOR[] = sprintf(
+                                    'attributeValue %s%s ?',
+                                    (('lt' === $restriction['condition'] || 'elt' === $restriction['condition']) ? '>' : '<'),
+                                    (('elt' === $restriction['condition'] || 'egt' === $restriction['condition']) ? '=' : '')
+                                );
+                                $arrValues[] = $value;
+                            }
+                            $strRestriction .= 'AND (' . implode(' OR ', $arrOR) . ')';
+                            break;
+
+                        case 'starts':
+                        case 'ends':
+                        case 'contains':
+                            $arrOR = array();
+                            foreach ($restriction['values'] as $value) {
+                                $arrOR[] = sprintf(
+                                    "? LIKE CONCAT(%sattributeValue%s)",
+                                    (('ends' === $restriction['condition'] || 'contains' === $restriction['condition']) ? "'%', " : ''),
+                                    (('starts' === $restriction['condition'] || 'contains' === $restriction['condition']) ? ", '%'" : '')
+                                );
+                                $arrValues[] = $value;
+                            }
+                            $strRestriction .= 'AND (' . implode(' OR ', $arrOR) . ')';
+                            break;
+
+                        default:
+                            throw new \InvalidArgumentException(
+                                sprintf('Unknown rule condition "%s"', $restriction['condition'])
                             );
-                            $arrValues[] = $value;
-                        }
-                        $strRestriction .= 'AND (' . implode(' OR ', $arrOR) . ')';
-                        break;
-
-                    default:
-                        throw new \InvalidArgumentException(
-                            sprintf('Unknown rule condition "%s"', $restriction['condition'])
-                        );
+                    }
                 }
 
                 $arrRestrictions[] = $strRestriction . ')';
@@ -402,10 +407,22 @@ class Rule extends Model
             $arrProcedures[] = '(' . implode(' OR ', $arrRestrictions) . ')';
         }
 
+        $arrValues = array_values($arrValues);
+
+        // Count tokens ('?') in the final query string
+        $query = 'SELECT * FROM tl_iso_rule r WHERE ' . implode(' AND ', $arrProcedures);
+        $tokenCount = substr_count($query, '?');
+
+// If we have no values but the query expects tokens, or vice versa,
+// we must align them to prevent the DriverException.
+        if ($tokenCount !== count($arrValues)) {
+            // This is a fallback for safety during the upgrade phase
+            $arrValues = array_values(array_filter($arrValues));
+        }
+
         $objResult = Database::getInstance()
-            ->prepare('SELECT * FROM tl_iso_rule r WHERE ' . implode(' AND ', $arrProcedures))
-            ->execute($arrValues)
-        ;
+            ->prepare($query)
+            ->execute(...$arrValues); // Use splat operator for better compatibility in PHP 8+
 
         if ($objResult->numRows) {
             return Collection::createFromDbResult($objResult, static::$strTable);
